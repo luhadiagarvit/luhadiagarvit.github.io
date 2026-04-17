@@ -1,0 +1,56 @@
+---
+import PageLayout from "@/layouts/Base.astro";
+import SocialList from "@/components/SocialList.astro";
+---
+
+<PageLayout meta={{ title: "Home", description: "Garvit Luhadia — data scientist." }}>
+	<section class="max-w-prose">
+		<h1 class="title mb-6 text-3xl sm:text-4xl">Garvit Luhadia</h1>
+		<p class="mb-4 leading-relaxed">
+			Data scientist. NYU CDS <span class="text-muted">'25</span>.
+		</p>
+		<p class="mb-4 leading-relaxed">
+			Currently working on applied ML at
+			<a class="cactus-link" href="https://radiology.med.nyu.edu/" rel="noreferrer" target="_blank">NYU Langone Radiology</a>,
+			and interning on the machine-learning team at the
+			<a class="cactus-link" href="https://www.un.org/en/" rel="noreferrer" target="_blank">UN (DPO&nbsp;SFGC)</a>.
+			Before that, CS at
+			<a class="cactus-link" href="https://vit.ac.in/" rel="noreferrer" target="_blank">VIT</a>.
+		</p>
+		<p class="mb-8 leading-relaxed">
+			I work on natural-language processing and computer vision for health and humanitarian
+			problems &mdash; what gets built, what ships, what actually helps.
+		</p>
+		<SocialList />
+	</section>
+
+	<section class="mt-20 max-w-prose">
+		<h2 class="title text-accent mb-4 text-lg">Selected work</h2>
+		<ul class="space-y-2 text-sm" role="list">
+			<li>
+				<span class="text-muted">2023 &middot;</span>
+				<a class="cactus-link" href="/publications/">Fusion of VAE-GANs and Siamese networks for face matching</a>
+				<span class="text-muted">&mdash; FICTA</span>
+			</li>
+			<li>
+				<span class="text-muted">2023 &middot;</span>
+				<a class="cactus-link" href="/publications/">UAV post-disaster assessment of residential buildings</a>
+				<span class="text-muted">&mdash; CSCE</span>
+			</li>
+			<li>
+				<span class="text-muted">2023 &middot;</span>
+				<a class="cactus-link" href="/publications/">Execution-time analysis of multithreading on seam carving</a>
+				<span class="text-muted">&mdash; AICAPS</span>
+			</li>
+		</ul>
+	</section>
+
+	<section class="mt-16 max-w-prose">
+		<h2 class="title text-accent mb-4 text-lg">Elsewhere</h2>
+		<p class="text-sm leading-relaxed">
+			I also take
+			<a class="cactus-link" href="/photos/">photographs</a>.
+			I don't post them to Meta properties because of the data-for-training policy, so they live here.
+		</p>
+	</section>
+</PageLayout>

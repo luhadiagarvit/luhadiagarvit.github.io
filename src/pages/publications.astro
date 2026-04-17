@@ -1,0 +1,73 @@
+---
+import { getCollection } from "astro:content";
+import PageLayout from "@/layouts/Base.astro";
+
+const publications = (await getCollection("publications")).sort((a, b) => {
+	if (b.data.year !== a.data.year) return b.data.year - a.data.year;
+	return (a.data.order ?? 0) - (b.data.order ?? 0);
+});
+
+const meta = {
+	title: "Publications",
+	description: "Papers by Garvit Luhadia.",
+};
+---
+
+<PageLayout meta={meta}>
+	<section class="mb-10">
+		<h1 class="title mb-4 text-2xl">Publications</h1>
+		<p class="text-muted max-w-prose text-sm leading-relaxed">
+			Peer-reviewed work, chronological &mdash; newest first.
+		</p>
+	</section>
+
+	{
+		publications.length === 0 ? (
+			<p class="text-muted text-sm italic">No publications listed.</p>
+		) : (
+			<ol class="space-y-8 text-sm" role="list">
+				{publications.map(({ data }) => (
+					<li class="max-w-prose">
+						<div class="mb-1 leading-snug font-medium text-accent-2">{data.title}</div>
+						{data.authors.length > 0 && (
+							<div class="text-muted mb-1">
+								{data.authors.join(", ")}
+							</div>
+						)}
+						<div class="text-muted">
+							<span>{data.venue}</span>
+							<span> &middot; {data.year}</span>
+							{data.status && data.status !== "accepted" && (
+								<span> &middot; <span class="italic">{data.status}</span></span>
+							)}
+						</div>
+						{(data.pdf || data.arxiv || data.doi || data.link) && (
+							<div class="mt-1 flex flex-wrap gap-x-3 text-xs">
+								{data.pdf && (
+									<a class="cactus-link" href={data.pdf} rel="noreferrer" target="_blank">
+										pdf
+									</a>
+								)}
+								{data.arxiv && (
+									<a class="cactus-link" href={data.arxiv} rel="noreferrer" target="_blank">
+										arxiv
+									</a>
+								)}
+								{data.doi && (
+									<a class="cactus-link" href={data.doi} rel="noreferrer" target="_blank">
+										doi
+									</a>
+								)}
+								{data.link && (
+									<a class="cactus-link" href={data.link} rel="noreferrer" target="_blank">
+										link
+									</a>
+								)}
+							</div>
+						)}
+					</li>
+				))}
+			</ol>
+		)
+	}
+</PageLayout>

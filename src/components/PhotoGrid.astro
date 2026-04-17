@@ -1,0 +1,107 @@
+---
+import { Image } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+import { getImage } from "astro:assets";
+
+interface Props {
+	photos: CollectionEntry<"photos">[];
+}
+
+const { photos } = Astro.props;
+
+const resolved = await Promise.all(
+	photos.map(async (photo) => {
+		const full = await getImage({ src: photo.data.src, format: "webp", quality: 85 });
+		return {
+			...photo,
+			full,
+		};
+	}),
+);
+---
+
+<div class="photo-grid" id="photo-gallery">
+	{
+		resolved.map(({ id, data, full }) => (
+			<a
+				class="photo-cell block"
+				data-pswp-width={full.attributes.width ?? data.src.width}
+				data-pswp-height={full.attributes.height ?? data.src.height}
+				href={full.src}
+				data-cropped="true"
+				data-photo-id={id}
+			>
+				<Image
+					src={data.src}
+					alt={data.alt}
+					widths={[320, 640, 960, 1280]}
+					sizes="(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw"
+					format="webp"
+					quality={82}
+					loading="lazy"
+					decoding="async"
+					class="w-full h-auto align-top"
+				/>
+				{(data.date || data.location || data.camera) && (
+					<div class="photo-meta text-muted">
+						{data.date && <span>{new Date(data.date).toISOString().slice(0, 10)}</span>}
+						{data.location && <span> &middot; {data.location}</span>}
+						{data.camera && <span> &middot; {data.camera}{data.lens ? `, ${data.lens}` : ""}</span>}
+					</div>
+				)}
+			</a>
+		))
+	}
+</div>
+
+<style>
+	.photo-grid {
+		column-count: 1;
+		column-gap: 0.5rem;
+	}
+	@media (min-width: 640px) {
+		.photo-grid {
+			column-count: 2;
+		}
+	}
+	@media (min-width: 960px) {
+		.photo-grid {
+			column-count: 3;
+		}
+	}
+	.photo-cell {
+		position: relative;
+		display: block;
+		break-inside: avoid;
+		margin-bottom: 0.5rem;
+	}
+	.photo-meta {
+		position: absolute;
+		inset-inline-start: 0.5rem;
+		inset-block-end: 0.5rem;
+		font-size: 0.625rem;
+		line-height: 1;
+		letter-spacing: 0.02em;
+		opacity: 0;
+		transition: opacity 160ms ease;
+		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+		color: rgba(255, 255, 255, 0.95);
+		pointer-events: none;
+	}
+	.photo-cell:hover .photo-meta,
+	.photo-cell:focus-visible .photo-meta {
+		opacity: 1;
+	}
+</style>
+
+<script>
+	import PhotoSwipeLightbox from "photoswipe/lightbox";
+	import "photoswipe/style.css";
+
+	const lightbox = new PhotoSwipeLightbox({
+		gallery: "#photo-gallery",
+		children: "a.photo-cell",
+		pswpModule: () => import("photoswipe"),
+	});
+	lightbox.init();
+</script>

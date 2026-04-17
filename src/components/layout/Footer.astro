@@ -1,0 +1,15 @@
+---
+import SocialList from "@/components/SocialList.astro";
+import { siteConfig } from "@/site.config";
+
+const year = new Date().getFullYear();
+---
+
+<footer
+	class="text-muted mt-auto flex w-full flex-col items-start justify-between gap-y-4 border-t border-dashed border-muted/30 pt-8 pb-6 text-xs sm:flex-row sm:items-center"
+>
+	<div>
+		&copy; {year} {siteConfig.author}
+	</div>
+	<SocialList />
+</footer>

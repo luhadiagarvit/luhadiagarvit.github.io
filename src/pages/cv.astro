@@ -1,0 +1,52 @@
+---
+import PageLayout from "@/layouts/Base.astro";
+
+const meta = {
+	title: "CV",
+	description: "Curriculum vitae — Garvit Luhadia.",
+};
+---
+
+<PageLayout meta={meta}>
+	<section class="max-w-prose">
+		<h1 class="title mb-6 text-2xl">CV</h1>
+		<p class="text-muted mb-8 text-sm">
+			Full PDF:
+			<a class="cactus-link" href="/cv.pdf" rel="noreferrer" target="_blank">cv.pdf</a>.
+		</p>
+
+		<h2 class="title text-accent mt-10 mb-3 text-lg">Education</h2>
+		<ul class="space-y-3 text-sm" role="list">
+			<li>
+				<div class="text-accent-2 font-medium">MS, Data Science</div>
+				<div class="text-muted">New York University, Center for Data Science &middot; 2023&ndash;2025</div>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">BTech, Computer Science &amp; Engineering</div>
+				<div class="text-muted">Vellore Institute of Technology &middot; 2019&ndash;2023</div>
+			</li>
+		</ul>
+
+		<h2 class="title text-accent mt-10 mb-3 text-lg">Experience</h2>
+		<ul class="space-y-3 text-sm" role="list">
+			<li>
+				<div class="text-accent-2 font-medium">Research Data Scientist</div>
+				<div class="text-muted">NYU Langone Health, Department of Radiology &middot; Fall 2024&ndash;present</div>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">Machine Learning Engineer Intern</div>
+				<div class="text-muted">United Nations, DPO SFGC Team &middot; Fall 2024</div>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">Graduate Research Assistant</div>
+				<div class="text-muted">NYU Department of Psychology, Trope Lab &middot; Summer 2024</div>
+			</li>
+		</ul>
+
+		<h2 class="title text-accent mt-10 mb-3 text-lg">Interests</h2>
+		<p class="text-sm leading-relaxed">
+			Natural language processing &middot; computer vision &middot; generative AI &middot;
+			applied ML for health and humanitarian problems.
+		</p>
+	</section>
+</PageLayout>

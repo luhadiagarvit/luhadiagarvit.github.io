@@ -1,0 +1,43 @@
+{
+	"name": "luhadiagarvit-site",
+	"type": "module",
+	"version": "0.1.0",
+	"private": true,
+	"packageManager": "pnpm@10.33.0",
+	"scripts": {
+		"dev": "astro dev",
+		"start": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"check": "astro check",
+		"format": "prettier -w . --cache"
+	},
+	"dependencies": {
+		"@astrojs/markdown-remark": "^7.0.0",
+		"@astrojs/mdx": "5.0.0",
+		"@astrojs/sitemap": "3.7.1",
+		"@tailwindcss/vite": "4.2.1",
+		"astro": "6.0.4",
+		"astro-expressive-code": "^0.41.7",
+		"astro-icon": "^1.1.5",
+		"photoswipe": "^5.4.4",
+		"rehype-autolink-headings": "^7.1.0",
+		"rehype-external-links": "^3.0.0",
+		"rehype-unwrap-images": "^1.0.0",
+		"sharp": "^0.34.5",
+		"tailwindcss": "^4.2.1",
+		"unified": "^11.0.5"
+	},
+	"devDependencies": {
+		"@astrojs/check": "^0.9.7",
+		"@iconify-json/mdi": "^1.2.2",
+		"@tailwindcss/typography": "^0.5.19",
+		"prettier": "^3.8.1",
+		"prettier-plugin-astro": "0.14.1",
+		"prettier-plugin-tailwindcss": "^0.7.2",
+		"typescript": "^5.9.3"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": ["@tailwindcss/oxide", "esbuild", "sharp"]
+	}
+}

@@ -1,0 +1,14 @@
+---
+import PageLayout from "@/layouts/Base.astro";
+
+const meta = {
+	description: "Page not found.",
+	title: "404",
+};
+---
+
+<PageLayout meta={meta}>
+	<h1 class="title mb-8">404</h1>
+	<p class="text-muted mb-4 text-sm">This page doesn't exist (or doesn't exist yet).</p>
+	<a class="cactus-link text-sm" href="/">&larr; home</a>
+</PageLayout>

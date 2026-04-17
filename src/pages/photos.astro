@@ -1,0 +1,31 @@
+---
+import { getCollection } from "astro:content";
+import PageLayout from "@/layouts/Base.astro";
+import PhotoGrid from "@/components/PhotoGrid.astro";
+
+const photos = (await getCollection("photos", ({ data }) => !data.draft)).sort(
+	(a, b) => b.data.date.getTime() - a.data.date.getTime(),
+);
+
+const meta = {
+	title: "Photos",
+	description: "Photographs by Garvit Luhadia.",
+};
+---
+
+<PageLayout meta={meta}>
+	<section class="mb-8">
+		<h1 class="title mb-4 text-2xl">Photos</h1>
+		<p class="text-muted max-w-prose text-sm leading-relaxed">
+			Frames I like. Click any image to open it full-size. Hover for date and camera.
+		</p>
+	</section>
+
+	{
+		photos.length === 0 ? (
+			<p class="text-muted text-sm italic">No photos here yet.</p>
+		) : (
+			<PhotoGrid photos={photos} />
+		)
+	}
+</PageLayout>
