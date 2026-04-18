@@ -26,7 +26,7 @@ export const menuLinks: { path: string; title: string }[] = [
 	{ path: "/contact/", title: "contact" },
 ];
 
-export const turnstileSiteKey = "REPLACE_WITH_TURNSTILE_SITE_KEY";
+export const turnstileSiteKey = "0x4AAAAAAC_OTnwMug4diZP6";
 
 export const expressiveCodeOptions: AstroExpressiveCodeOptions = {
 	styleOverrides: {
