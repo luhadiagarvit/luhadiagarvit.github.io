@@ -1,0 +1,22 @@
+# Garvit Luhadia
+
+> Data scientist. NYU Center for Data Science '25. Currently working on applied machine learning at NYU Langone Radiology and as an ML intern on the UN Department of Peace Operations (DPO SFGC) team. Research and engineering across natural-language processing and computer vision, applied to health and humanitarian problems.
+
+## Pages
+
+- [Home](https://luhadiagarvit.me/): Short bio, current roles, and selected work
+- [Publications](https://luhadiagarvit.me/publications/): Peer-reviewed papers in computer vision, generative models, and systems
+- [CV](https://luhadiagarvit.me/cv/): Full academic and professional record
+- [Photos](https://luhadiagarvit.me/photos/): Film and digital photography
+
+## Contact
+
+- Email: garvit.luhadia@un.org
+- GitHub: https://github.com/luhadiagarvit
+- LinkedIn: https://www.linkedin.com/in/luhadiagarvit
+
+## Policy
+
+- AI training crawlers (GPTBot, ClaudeBot, CCBot, Bytespider, Meta-ExternalAgent, etc.) are blocked at the network edge.
+- User-initiated AI fetches (ChatGPT-User, Claude-User, Perplexity-User, etc.) and search-index crawlers (Googlebot, BingBot, PerplexityBot, OAI-SearchBot) are allowed.
+- Full policy: https://luhadiagarvit.me/robots.txt
