@@ -1,0 +1,25 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "luhadiagarvit-contact",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-01-01",
+	"routes": [
+		{
+			"pattern": "luhadiagarvit.me/api/contact",
+			"zone_name": "luhadiagarvit.me"
+		}
+	],
+	"send_email": [
+		{
+			"name": "MAIL",
+			"destination_address": "garvit.luhadia@un.org"
+		}
+	],
+	"vars": {
+		"FROM_EMAIL": "form@luhadiagarvit.me",
+		"TO_EMAIL": "garvit.luhadia@un.org"
+	},
+	"observability": {
+		"enabled": true
+	}
+}

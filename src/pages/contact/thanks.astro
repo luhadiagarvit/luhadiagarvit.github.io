@@ -1,0 +1,19 @@
+---
+import PageLayout from "@/layouts/Base.astro";
+
+const meta = {
+	title: "Thanks",
+	description: "Message received.",
+};
+---
+
+<PageLayout meta={meta}>
+	<section class="max-w-prose">
+		<h1 class="title mb-6 text-2xl">Thanks &mdash; your message is on its way.</h1>
+		<p class="text-sm leading-relaxed">
+			I&rsquo;ll get back to you shortly.
+			<br />
+			<a class="cactus-link" href="/">Back to home</a>.
+		</p>
+	</section>
+</PageLayout>

@@ -23,7 +23,10 @@ export const menuLinks: { path: string; title: string }[] = [
 	{ path: "/photos/", title: "photos" },
 	{ path: "/publications/", title: "publications" },
 	{ path: "/cv/", title: "cv" },
+	{ path: "/contact/", title: "contact" },
 ];
+
+export const turnstileSiteKey = "REPLACE_WITH_TURNSTILE_SITE_KEY";
 
 export const expressiveCodeOptions: AstroExpressiveCodeOptions = {
 	styleOverrides: {

@@ -1,0 +1,65 @@
+---
+import PageLayout from "@/layouts/Base.astro";
+import { turnstileSiteKey } from "@/site.config";
+
+const meta = {
+	title: "Contact",
+	description: "Get in touch with Garvit Luhadia.",
+};
+---
+
+<PageLayout meta={meta}>
+	<section class="max-w-prose">
+		<h1 class="title mb-6 text-2xl">Contact</h1>
+		<p class="text-muted mb-8 text-sm leading-relaxed">
+			Fill the form. I read it, I reply from
+			<code class="text-global-text">garvit.luhadia@un.org</code>.
+		</p>
+
+		<form action="/api/contact" method="POST" class="space-y-5 text-sm">
+			<div>
+				<label class="text-muted mb-1 block" for="name">Name</label>
+				<input
+					autocomplete="name"
+					class="border-muted/30 focus:border-accent block w-full rounded border bg-transparent px-3 py-2 focus:outline-none"
+					id="name"
+					maxlength="100"
+					name="name"
+					required
+					type="text"
+				/>
+			</div>
+			<div>
+				<label class="text-muted mb-1 block" for="email">Email</label>
+				<input
+					autocomplete="email"
+					class="border-muted/30 focus:border-accent block w-full rounded border bg-transparent px-3 py-2 focus:outline-none"
+					id="email"
+					maxlength="200"
+					name="email"
+					required
+					type="email"
+				/>
+			</div>
+			<div>
+				<label class="text-muted mb-1 block" for="message">Message</label>
+				<textarea
+					class="border-muted/30 focus:border-accent block w-full rounded border bg-transparent px-3 py-2 focus:outline-none"
+					id="message"
+					maxlength="5000"
+					name="message"
+					required
+					rows="7"></textarea>
+			</div>
+			<div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="auto"></div>
+			<button
+				class="border-accent text-accent hover:bg-accent hover:text-global-bg rounded border px-4 py-2 transition-colors"
+				type="submit"
+			>
+				Send
+			</button>
+		</form>
+	</section>
+
+	<script async defer is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
+</PageLayout>

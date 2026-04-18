@@ -6,8 +6,9 @@
 
 - [Home](https://luhadiagarvit.me/): Short bio, current roles, and selected work
 - [Publications](https://luhadiagarvit.me/publications/): Peer-reviewed papers in computer vision, generative models, and systems
-- [CV](https://luhadiagarvit.me/cv/): Full academic and professional record
+- [CV](https://luhadiagarvit.me/cv/): Education, full experience, selected projects, and skills
 - [Photos](https://luhadiagarvit.me/photos/): Film and digital photography
+- [Contact](https://luhadiagarvit.me/contact/): Contact form
 
 ## Contact
 

@@ -15,7 +15,7 @@ const meta = {
 			<a class="cactus-link" href="/cv.pdf" rel="noreferrer" target="_blank">cv.pdf</a>.
 		</p>
 
-		<h2 class="title text-accent mt-10 mb-3 text-lg">Education</h2>
+		<h2 class="title text-accent mt-10 mb-3 text-lg" id="education">Education</h2>
 		<ul class="space-y-3 text-sm" role="list">
 			<li>
 				<div class="text-accent-2 font-medium">MS, Data Science</div>
@@ -27,23 +27,102 @@ const meta = {
 			</li>
 		</ul>
 
-		<h2 class="title text-accent mt-10 mb-3 text-lg">Experience</h2>
-		<ul class="space-y-3 text-sm" role="list">
+		<h2 class="title text-accent mt-10 mb-3 text-lg" id="experience">Experience</h2>
+		<ul class="space-y-6 text-sm" role="list">
 			<li>
-				<div class="text-accent-2 font-medium">Research Data Scientist</div>
-				<div class="text-muted">NYU Langone Health, Department of Radiology &middot; Fall 2024&ndash;present</div>
+				<div class="text-accent-2 font-medium">Data Scientist</div>
+				<div class="text-muted mb-1">United Nations, Department of Peace Operations &middot; Jan 2026&ndash;present</div>
+				<ul class="text-muted list-[square] space-y-1 pl-4">
+					<li>Real-time machine-translation pipelines with on-device SLMs and foundational models, ONNX-optimized for sub-500&nbsp;ms latency, served via REST APIs.</li>
+					<li>Hybrid cloud-edge MLOps with federated learning and CI/CD for automated retraining and deployment across thousands of field devices.</li>
+					<li>Agentic workflows via RAG (LangChain + Pinecone) with distributed retrieval, logging, and monitoring.</li>
+				</ul>
 			</li>
 			<li>
 				<div class="text-accent-2 font-medium">Machine Learning Engineer Intern</div>
-				<div class="text-muted">United Nations, DPO SFGC Team &middot; Fall 2024</div>
+				<div class="text-muted mb-1">United Nations, DPO Strategic Force Generation Cell &middot; Feb&ndash;Aug 2025</div>
+				<ul class="text-muted list-[square] space-y-1 pl-4">
+					<li>Shipped a proof-of-concept real-time machine-translation tool tuned to the linguistic needs of UN field personnel.</li>
+				</ul>
 			</li>
 			<li>
-				<div class="text-accent-2 font-medium">Graduate Research Assistant</div>
-				<div class="text-muted">NYU Department of Psychology, Trope Lab &middot; Summer 2024</div>
+				<div class="text-accent-2 font-medium">Research Data Scientist</div>
+				<div class="text-muted mb-1">NYU Langone Health, Department of Radiology &mdash; Shen Lab &middot; Sep 2024&ndash;May 2025</div>
+				<ul class="text-muted list-[square] space-y-1 pl-4">
+					<li>sciSpacy / BioBERT / Spark NLP pipeline over 50k+ radiology reports; +30% NER accuracy with cross-validated feature engineering.</li>
+					<li>Computer-vision infrastructure for pancreatic-cyst detection on 10k+ MRI scans, with MLflow and W&amp;B for dataset versioning and model evaluation.</li>
+				</ul>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">Data Science Capstone</div>
+				<div class="text-muted mb-1">NYU Center for Data Science &middot; Sep&ndash;Dec 2024</div>
+				<ul class="text-muted list-[square] space-y-1 pl-4">
+					<li>Multi-stage ASR &rarr; MT &rarr; TTS pipeline for parallel-corpus low-resource language translation.</li>
+					<li>PEFT-adapted multimodal multilingual foundation model for out-of-distribution language pairs.</li>
+				</ul>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">NLP Research Assistant</div>
+				<div class="text-muted mb-1">NYU Department of Psychology &middot; May&ndash;Sep 2024</div>
+				<ul class="text-muted list-[square] space-y-1 pl-4">
+					<li>GNN-based social-network analysis over 1M+ annotations; -60% processing time via feature-engineering refactor.</li>
+					<li>LLaMA-based framework for measuring linguistic abstractness in social engineering contexts.</li>
+				</ul>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">Mitacs Research Intern</div>
+				<div class="text-muted mb-1">University of Alberta &middot; Jul&ndash;Dec 2022</div>
+				<ul class="text-muted list-[square] space-y-1 pl-4">
+					<li>Few-shot and transfer-learning systems, +20% accuracy with 75% less labelled data.</li>
+					<li>Custom CUDA kernels with mixed-precision training, -35% training time.</li>
+				</ul>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">Applied Deep Learning Trainee</div>
+				<div class="text-muted mb-1">HPE Singapore &mdash; NUS&ndash;HPE Apprenticeship &middot; Jun&ndash;Jul 2022</div>
+				<ul class="text-muted list-[square] space-y-1 pl-4">
+					<li>Production NLP pipeline generating video metadata, deployed as a REST API on Azure Kubernetes; +25% CTR.</li>
+				</ul>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">Data Science Externship</div>
+				<div class="text-muted mb-1">BCG</div>
+				<ul class="text-muted list-[square] space-y-1 pl-4">
+					<li>Churn-prediction service with Random Forests, feature engineering, cross-validation, and A/B testing; microservices via Azure DevOps CI/CD.</li>
+				</ul>
 			</li>
 		</ul>
 
-		<h2 class="title text-accent mt-10 mb-3 text-lg">Interests</h2>
+		<h2 class="title text-accent mt-10 mb-3 text-lg" id="projects">Selected projects</h2>
+		<ul class="space-y-4 text-sm" role="list">
+			<li>
+				<div class="text-accent-2 font-medium">RAG systems &mdash; Meta KDD Cup 2024</div>
+				<div class="text-muted">World rank 64 in phase 1 of the CRAG (Comprehensive RAG) benchmark.</div>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">Mental Health Assistant</div>
+				<div class="text-muted">Fine-tuned Llama&nbsp;2 and GPT-3 for a mental-health chatbot; 85% user-satisfaction rate in evaluation.</div>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">Artificial Second Brain</div>
+				<div class="text-muted">Personal knowledge base with text vectorisation and an open-source LLM for retrieval-augmented notes.</div>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">Fake News Classifier</div>
+				<div class="text-muted">Bidirectional LSTMs for credibility fact-checking; 92% accuracy on a held-out set.</div>
+			</li>
+			<li>
+				<div class="text-accent-2 font-medium">Real-time Object Detection on Raspberry Pi</div>
+				<div class="text-muted">Google Object Detection API deployed on-device; 90% detection accuracy at edge-latency.</div>
+			</li>
+		</ul>
+
+		<h2 class="title text-accent mt-10 mb-3 text-lg" id="skills">Skills</h2>
+		<p class="text-muted text-sm leading-relaxed">
+			Python, SQL; PyTorch, TensorFlow, Scikit-learn; Spark, Kafka; Docker, Kubernetes, MLflow, W&amp;B, CI/CD; AWS (SageMaker, EC2, S3), Azure DevOps; REST APIs, microservices, distributed systems.
+		</p>
+
+		<h2 class="title text-accent mt-10 mb-3 text-lg" id="interests">Interests</h2>
 		<p class="text-sm leading-relaxed">
 			Natural language processing &middot; computer vision &middot; generative AI &middot;
 			applied ML for health and humanitarian problems.
