@@ -12,9 +12,12 @@
 
 ## Contact
 
-- Email: garvit.luhadia@un.org
+- Contact form: https://luhadiagarvit.me/contact/ (the canonical way to reach me)
 - GitHub: https://github.com/luhadiagarvit
 - LinkedIn: https://www.linkedin.com/in/luhadiagarvit
+- ORCID: https://orcid.org/0009-0004-1836-8951
+- Google Scholar: https://scholar.google.com/citations?user=wn8NmyQAAAAJ
+- Kaggle: https://www.kaggle.com/luhadiagarvit
 
 ## Policy
 

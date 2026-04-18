@@ -1,14 +1,32 @@
 ---
 import PageLayout from "@/layouts/Base.astro";
+import { menuLinks } from "@/site.config";
 
 const meta = {
 	description: "Page not found.",
 	title: "404",
 };
+
+const suggestions = menuLinks.filter((l) => l.path !== "/");
 ---
 
 <PageLayout meta={meta}>
-	<h1 class="title mb-8">404</h1>
-	<p class="text-muted mb-4 text-sm">This page doesn't exist (or doesn't exist yet).</p>
-	<a class="cactus-link text-sm" href="/">&larr; home</a>
+	<section class="max-w-prose">
+		<h1 class="title mb-6 text-2xl">404</h1>
+		<p class="text-muted mb-6 text-sm leading-relaxed">
+			This page doesn't exist (or doesn't exist yet). Maybe one of these?
+		</p>
+		<ul class="mb-8 space-y-1 text-sm" role="list">
+			<li><a class="cactus-link" href="/">&larr; home</a></li>
+			{
+				suggestions.map((l) => (
+					<li>
+						<a class="cactus-link" href={l.path}>
+							{l.title}
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</section>
 </PageLayout>

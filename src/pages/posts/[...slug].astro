@@ -1,0 +1,96 @@
+---
+import { getCollection, render } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import PageLayout from "@/layouts/Base.astro";
+import FormattedDate from "@/components/FormattedDate.astro";
+import TOC from "@/components/TOC.astro";
+import { readingTime } from "@/utils/readingTime";
+
+export async function getStaticPaths() {
+	const posts = await getCollection("post", ({ data }) => !data.draft);
+	const sorted = posts.sort(
+		(a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime(),
+	);
+	return sorted.map((post, i) => ({
+		params: { slug: post.id },
+		props: {
+			post,
+			prev: sorted[i + 1] ?? null,
+			next: sorted[i - 1] ?? null,
+		},
+	}));
+}
+
+interface Props {
+	post: CollectionEntry<"post">;
+	prev: CollectionEntry<"post"> | null;
+	next: CollectionEntry<"post"> | null;
+}
+
+const { post, prev, next } = Astro.props;
+const { Content, headings } = await render(post);
+const minutes = readingTime(post.body ?? "");
+
+const tocItems = headings
+	.filter((h) => h.depth === 2 || h.depth === 3)
+	.map((h) => ({ id: h.slug, label: h.text }));
+
+const meta = {
+	title: post.data.title,
+	description: post.data.description,
+	articleDate: post.data.publishDate.toISOString(),
+};
+---
+
+<PageLayout meta={meta}>
+	{tocItems.length > 2 && <TOC items={tocItems} />}
+	<article class="max-w-prose">
+		<header class="mb-8">
+			<h1 class="title mb-3 text-2xl leading-tight">{post.data.title}</h1>
+			<div class="text-muted flex flex-wrap gap-x-3 text-xs">
+				<FormattedDate date={post.data.publishDate} />
+				<span>&middot;</span>
+				<span>{minutes}</span>
+				{
+					post.data.tags.length > 0 && (
+						<>
+							<span>&middot;</span>
+							<span class="flex flex-wrap gap-x-2">
+								{post.data.tags.map((t) => (
+									<a class="cactus-link" href={`/tags/${t}/`}>
+										#{t}
+									</a>
+								))}
+							</span>
+						</>
+					)
+				}
+			</div>
+		</header>
+
+		<div class="prose prose-sm text-global-text max-w-none">
+			<Content />
+		</div>
+
+		{
+			(prev || next) && (
+				<nav class="mt-12 flex justify-between gap-8 text-sm" aria-label="post navigation">
+					{prev ? (
+						<a class="cactus-link" href={`/posts/${prev.id}/`}>
+							&larr; {prev.data.title}
+						</a>
+					) : (
+						<span />
+					)}
+					{next ? (
+						<a class="cactus-link text-right" href={`/posts/${next.id}/`}>
+							{next.data.title} &rarr;
+						</a>
+					) : (
+						<span />
+					)}
+				</nav>
+			)
+		}
+	</article>
+</PageLayout>

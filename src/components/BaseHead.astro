@@ -1,5 +1,5 @@
 ---
-import { siteConfig } from "@/site.config";
+import { siteConfig, cloudflareWebAnalyticsToken } from "@/site.config";
 import type { SiteMeta } from "@/types";
 import "@/styles/global.css";
 
@@ -10,7 +10,13 @@ const { articleDate, description, ogImage, title } = Astro.props;
 const titleSeparator = "·";
 const siteTitle = `${title} ${titleSeparator} ${siteConfig.title}`;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-const socialImageURL = new URL(ogImage ? ogImage : "/social-card.png", Astro.url).href;
+
+const slug = Astro.url.pathname.replace(/^\/|\/$/g, "") || "index";
+const ogPathsWithoutDynamicCard = new Set(["contact/thanks", "404"]);
+const defaultOgPath = ogPathsWithoutDynamicCard.has(slug)
+	? "/social-card.png"
+	: `/og/${slug}.png`;
+const socialImageURL = new URL(ogImage ?? defaultOgPath, Astro.url).href;
 ---
 
 <meta charset="utf-8" />
@@ -50,5 +56,21 @@ const socialImageURL = new URL(ogImage ? ogImage : "/social-card.png", Astro.url
 <meta content={socialImageURL} property="twitter:image" />
 
 <link href="/sitemap-index.xml" rel="sitemap" />
+<link href="/rss.xml" rel="alternate" title={`RSS feed for ${siteConfig.title}`} type="application/rss+xml" />
+
+<link href="https://github.com/luhadiagarvit" rel="me" />
+<link href="https://www.linkedin.com/in/luhadiagarvit" rel="me" />
+<link href="https://orcid.org/0009-0004-1836-8951" rel="me" />
 
 <meta content={Astro.generator} name="generator" />
+
+{
+	cloudflareWebAnalyticsToken && (
+		<script
+			defer
+			is:inline
+			src="https://static.cloudflareinsights.com/beacon.min.js"
+			data-cf-beacon={`{"token": "${cloudflareWebAnalyticsToken}"}`}
+		/>
+	)
+}

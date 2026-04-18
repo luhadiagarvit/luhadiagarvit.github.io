@@ -1,0 +1,63 @@
+---
+interface Item {
+	id: string;
+	label: string;
+}
+
+interface Props {
+	items: Item[];
+}
+
+const { items } = Astro.props;
+---
+
+<nav aria-label="Table of contents" class="toc hidden lg:block">
+	<div class="text-muted mb-3 text-xs tracking-wide uppercase">On this page</div>
+	<ul class="space-y-1 text-xs" role="list">
+		{
+			items.map((item) => (
+				<li>
+					<a class="text-muted hover:text-link toc-link" data-target={item.id} href={`#${item.id}`}>
+						{item.label}
+					</a>
+				</li>
+			))
+		}
+	</ul>
+</nav>
+
+<style>
+	.toc {
+		position: fixed;
+		top: 6rem;
+		right: max(2rem, calc((100vw - 48rem) / 2 - 14rem));
+		width: 12rem;
+	}
+	.toc-link[data-active="true"] {
+		color: var(--color-link);
+	}
+</style>
+
+<script>
+	const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".toc-link"));
+	const targets = links
+		.map((l) => document.getElementById(l.dataset.target ?? ""))
+		.filter((el): el is HTMLElement => !!el);
+
+	if (targets.length) {
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const e of entries) {
+					const link = links.find((l) => l.dataset.target === e.target.id);
+					if (!link) continue;
+					if (e.isIntersecting) {
+						links.forEach((l) => l.removeAttribute("data-active"));
+						link.setAttribute("data-active", "true");
+					}
+				}
+			},
+			{ rootMargin: "-20% 0px -70% 0px" },
+		);
+		targets.forEach((t) => observer.observe(t));
+	}
+</script>

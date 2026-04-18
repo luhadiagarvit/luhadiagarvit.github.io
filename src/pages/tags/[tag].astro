@@ -1,0 +1,58 @@
+---
+import { getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import PageLayout from "@/layouts/Base.astro";
+import PostCard from "@/components/PostCard.astro";
+
+export async function getStaticPaths() {
+	const posts = await getCollection("post", ({ data }) => !data.draft);
+	const byTag = new Map<string, CollectionEntry<"post">[]>();
+	for (const post of posts) {
+		for (const tag of post.data.tags) {
+			const list = byTag.get(tag) ?? [];
+			list.push(post);
+			byTag.set(tag, list);
+		}
+	}
+	return Array.from(byTag.entries()).map(([tag, postsForTag]) => ({
+		params: { tag },
+		props: {
+			tag,
+			posts: postsForTag.sort(
+				(a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime(),
+			),
+		},
+	}));
+}
+
+interface Props {
+	tag: string;
+	posts: CollectionEntry<"post">[];
+}
+
+const { tag, posts } = Astro.props;
+
+const meta = {
+	title: `#${tag}`,
+	description: `Posts tagged #${tag}.`,
+};
+---
+
+<PageLayout meta={meta}>
+	<section class="mb-10">
+		<h1 class="title mb-4 text-2xl">#{tag}</h1>
+		<p class="text-muted max-w-prose text-sm">
+			<a class="cactus-link" href="/tags/">all tags</a>
+		</p>
+	</section>
+
+	<ul class="space-y-8" role="list">
+		{
+			posts.map((post) => (
+				<li>
+					<PostCard post={post} />
+				</li>
+			))
+		}
+	</ul>
+</PageLayout>

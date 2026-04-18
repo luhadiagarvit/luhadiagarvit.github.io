@@ -32,4 +32,24 @@ const publications = defineCollection({
 	}),
 });
 
-export const collections = { photos, publications };
+const post = defineCollection({
+	loader: glob({ base: "./src/content/post", pattern: "**/*.{md,mdx}" }),
+	schema: ({ image }) =>
+		z.object({
+			title: z.string(),
+			description: z.string().default(""),
+			publishDate: z.string().or(z.date()).transform((val) => new Date(val)),
+			updatedDate: z.string().or(z.date()).transform((val) => new Date(val)).optional(),
+			tags: z.array(z.string()).default([]),
+			draft: z.boolean().default(false),
+			ogImage: z.string().optional(),
+			coverImage: z
+				.object({
+					src: image(),
+					alt: z.string().default(""),
+				})
+				.optional(),
+		}),
+});
+
+export const collections = { photos, publications, post };

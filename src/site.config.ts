@@ -20,13 +20,19 @@ export const siteConfig: SiteConfig = {
 
 export const menuLinks: { path: string; title: string }[] = [
 	{ path: "/", title: "home" },
+	{ path: "/posts/", title: "posts" },
 	{ path: "/photos/", title: "photos" },
 	{ path: "/publications/", title: "publications" },
 	{ path: "/cv/", title: "cv" },
+	{ path: "/now/", title: "now" },
 	{ path: "/contact/", title: "contact" },
 ];
 
 export const turnstileSiteKey = "0x4AAAAAAC_OTnwMug4diZP6";
+
+// Paste the beacon token from Cloudflare → Account → Web Analytics → Add a site.
+// Leave empty to disable the snippet at build time.
+export const cloudflareWebAnalyticsToken = "";
 
 export const expressiveCodeOptions: AstroExpressiveCodeOptions = {
 	styleOverrides: {

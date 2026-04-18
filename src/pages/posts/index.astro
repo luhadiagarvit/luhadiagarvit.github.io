@@ -1,0 +1,43 @@
+---
+import { getCollection } from "astro:content";
+import PageLayout from "@/layouts/Base.astro";
+import PostCard from "@/components/PostCard.astro";
+
+const posts = (await getCollection("post", ({ data }) => !data.draft)).sort(
+	(a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime(),
+);
+
+const meta = {
+	title: "Posts",
+	description: "Notes and longer writing by Garvit Luhadia.",
+};
+---
+
+<PageLayout meta={meta}>
+	<section class="mb-10">
+		<h1 class="title mb-4 text-2xl">Posts</h1>
+		<p class="text-muted max-w-prose text-sm leading-relaxed">
+			Longer-form writing. Rare, slow to publish.
+		</p>
+	</section>
+
+	{
+		posts.length === 0 ? (
+			<p class="text-muted max-w-prose text-sm italic">
+				Nothing published yet. When I do, it'll show up here and on the{" "}
+				<a class="cactus-link" href="/rss.xml">
+					RSS feed
+				</a>
+				.
+			</p>
+		) : (
+			<ul class="space-y-8" role="list">
+				{posts.map((post) => (
+					<li>
+						<PostCard post={post} />
+					</li>
+				))}
+			</ul>
+		)
+	}
+</PageLayout>

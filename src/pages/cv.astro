@@ -1,18 +1,28 @@
 ---
 import PageLayout from "@/layouts/Base.astro";
+import TOC from "@/components/TOC.astro";
 
 const meta = {
 	title: "CV",
 	description: "Curriculum vitae — Garvit Luhadia.",
 };
+
+const tocItems = [
+	{ id: "education", label: "Education" },
+	{ id: "experience", label: "Experience" },
+	{ id: "projects", label: "Selected projects" },
+	{ id: "skills", label: "Skills" },
+	{ id: "interests", label: "Interests" },
+];
 ---
 
 <PageLayout meta={meta}>
+	<TOC items={tocItems} />
 	<section class="max-w-prose">
 		<h1 class="title mb-6 text-2xl">CV</h1>
 		<p class="text-muted mb-8 text-sm">
 			Full PDF:
-			<a class="cactus-link" href="/cv.pdf" rel="noreferrer" target="_blank">cv.pdf</a>.
+			<a class="cactus-link" download href="/cv.pdf">download cv.pdf</a>.
 		</p>
 
 		<h2 class="title text-accent mt-10 mb-3 text-lg" id="education">Education</h2>

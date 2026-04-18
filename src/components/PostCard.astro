@@ -1,0 +1,38 @@
+---
+import FormattedDate from "@/components/FormattedDate.astro";
+import type { CollectionEntry } from "astro:content";
+import { readingTime } from "@/utils/readingTime";
+
+interface Props {
+	post: CollectionEntry<"post">;
+}
+
+const { post } = Astro.props;
+const minutes = readingTime(post.body ?? "");
+---
+
+<article class="max-w-prose">
+	<a class="group block" href={`/posts/${post.id}/`}>
+		<h3 class="text-accent-2 group-hover:text-link text-base font-medium leading-snug">
+			{post.data.title}
+		</h3>
+		{
+			post.data.description && (
+				<p class="text-muted mt-1 text-sm leading-relaxed">{post.data.description}</p>
+			)
+		}
+		<div class="text-muted mt-2 flex flex-wrap gap-x-3 text-xs">
+			<FormattedDate date={post.data.publishDate} />
+			<span>&middot;</span>
+			<span>{minutes}</span>
+			{
+				post.data.tags.length > 0 && (
+					<>
+						<span>&middot;</span>
+						<span>{post.data.tags.map((t) => `#${t}`).join(" ")}</span>
+					</>
+				)
+			}
+		</div>
+	</a>
+</article>
