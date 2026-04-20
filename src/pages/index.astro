@@ -1,6 +1,6 @@
 ---
+import { getCollection } from "astro:content";
 import PageLayout from "@/layouts/Base.astro";
-import SocialList from "@/components/SocialList.astro";
 import { siteConfig } from "@/site.config";
 
 const personSchema = {
@@ -25,73 +25,194 @@ const personSchema = {
 		{ "@type": "CollegeOrUniversity", name: "Vellore Institute of Technology" },
 	],
 };
+
+const nowDate = "Apr 18, 2026";
+const nowItems = [
+	{
+		label: "Work",
+		text: "Shipping on-device real-time machine translation for UN field personnel — ONNX-optimized small models, sub-500 ms latency.",
+	},
+	{
+		label: "Research",
+		text: "Reading about low-resource MT, quantization-aware training, and federated fine-tuning.",
+	},
+	{
+		label: "Reading",
+		text: "Rotating non-fiction (operations research, history of cartography) and the occasional novel.",
+	},
+];
+
+const posts = (await getCollection("post", ({ data }) => !data.draft)).sort(
+	(a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime(),
+);
+const recentPosts = posts.slice(0, 3);
+
+const socials = [
+	{ label: "GitHub", handle: "luhadiagarvit", href: "https://github.com/luhadiagarvit" },
+	{ label: "LinkedIn", handle: "in/luhadiagarvit", href: "https://www.linkedin.com/in/luhadiagarvit" },
+	{ label: "Scholar", handle: "Garvit Luhadia", href: "https://scholar.google.com/citations?user=wn8NmyQAAAAJ" },
+	{ label: "ORCID", handle: "0009-0004-1836-8951", href: "https://orcid.org/0009-0004-1836-8951" },
+	{ label: "Kaggle", handle: "luhadiagarvit", href: "https://www.kaggle.com/luhadiagarvit" },
+	{ label: "Contact", handle: "via form →", href: "/contact/" },
+];
+
+const terminalFull = `$ whoami\nGarvit Luhadia — Data Scientist, UN DPO\n$ cat bio.txt`;
 ---
 
 <PageLayout meta={{ title: "Home", description: "Garvit Luhadia — data scientist." }}>
 	<script type="application/ld+json" is:inline set:html={JSON.stringify(personSchema)} />
-	<section class="max-w-prose">
-		<h1 class="title mb-6 text-3xl sm:text-4xl">Garvit Luhadia</h1>
-		<p class="mb-4 leading-relaxed">
-			Data scientist. NYU CDS <span class="text-muted">'25</span>.
-		</p>
-		<p class="mb-4 leading-relaxed">
-			Currently a data scientist at the
-			<a class="cactus-link" href="https://www.un.org/en/" rel="noreferrer" target="_blank">UN Department of Peace Operations</a>,
-			building on-device real-time machine translation for field personnel.
-		</p>
-		<p class="mb-4 leading-relaxed">
-			Previously on the radiology-NLP and medical-imaging team at
-			<a class="cactus-link" href="https://radiology.med.nyu.edu/" rel="noreferrer" target="_blank">NYU Langone</a>
-			(Shen Lab), and undergrad CS at
-			<a class="cactus-link" href="https://vit.ac.in/" rel="noreferrer" target="_blank">VIT</a>.
-		</p>
-		<p class="mb-8 leading-relaxed">
-			I work on natural-language processing and computer vision for health and humanitarian
-			problems &mdash; what gets built, what ships, what actually helps.
-		</p>
-		<SocialList />
+
+	<section class="v1-hero">
+		<pre class="v1-hero__line" data-terminal data-full={terminalFull}>&nbsp;</pre>
+		<h1 class="v1-hero__name">Garvit Luhadia.</h1>
+		<p class="v1-hero__tag">Data scientist. NYU CDS <span class="text-muted">'25</span>.</p>
+		<div class="v1-hero__bio">
+			<p>
+				Currently a data scientist at the
+				<a class="cactus-link" href="https://www.un.org/en/" rel="noreferrer" target="_blank">UN Department of Peace Operations</a>,
+				building on-device real-time machine translation for field personnel.
+			</p>
+			<p>
+				Previously on the radiology-NLP and medical-imaging team at
+				<a class="cactus-link" href="https://radiology.med.nyu.edu/" rel="noreferrer" target="_blank">NYU Langone</a>
+				(Shen Lab), and undergrad CS at
+				<a class="cactus-link" href="https://vit.ac.in/" rel="noreferrer" target="_blank">VIT</a>.
+			</p>
+			<p>
+				I work on natural-language processing and computer vision for health and humanitarian
+				problems — what gets built, what ships, what actually helps.
+			</p>
+		</div>
 	</section>
 
-	<section class="mt-20 max-w-prose">
-		<h2 class="title text-accent mb-4 text-lg">Selected work</h2>
+	<section class="v1-section">
+		<div class="v1-section__head">
+			<div class="v1-section__title">now — {nowDate}</div>
+			<a class="v1-section__more" href="/now/">full page →</a>
+		</div>
+		<ul class="v1-now-list">
+			{nowItems.map((it) => (
+				<li>
+					<span class="label">{it.label}</span>
+					<span>{it.text}</span>
+				</li>
+			))}
+		</ul>
+	</section>
+
+	{recentPosts.length > 0 && (
+		<section class="v1-section">
+			<div class="v1-section__head">
+				<div class="v1-section__title">writing</div>
+				<a class="v1-section__more" href="/posts/">all posts →</a>
+			</div>
+			<div>
+				{recentPosts.map((p) => (
+					<a class="v1-post" href={`/posts/${p.id}/`}>
+						<div class="v1-post__top">
+							<span>{new Date(p.data.publishDate).toISOString().slice(0, 10)}</span>
+							{p.data.tags.length > 0 && <span>{p.data.tags.slice(0, 2).join(" · ")}</span>}
+						</div>
+						<div class="v1-post__title">{p.data.title}</div>
+						{p.data.description && <div class="v1-post__excerpt">{p.data.description}</div>}
+					</a>
+				))}
+			</div>
+		</section>
+	)}
+
+	<section class="v1-section">
+		<div class="v1-section__head">
+			<div class="v1-section__title">selected work</div>
+			<a class="v1-section__more" href="/publications/">all publications →</a>
+		</div>
 		<ul class="space-y-2 text-sm" role="list">
 			<li>
-				<span class="text-muted">2024 &middot;</span>
+				<span class="text-muted">2024 · </span>
 				<a class="cactus-link" href="/cv/#projects">Meta KDD Cup — RAG benchmark (CRAG), world rank 64 in phase 1</a>
 			</li>
 			<li>
-				<span class="text-muted">2024 &middot;</span>
-				<a class="cactus-link" href="/cv/#experience">Multi-stage ASR &rarr; MT &rarr; TTS pipeline for low-resource language translation</a>
-				<span class="text-muted">&mdash; NYU Capstone</span>
+				<span class="text-muted">2024 · </span>
+				<a class="cactus-link" href="/cv/#experience">Multi-stage ASR → MT → TTS pipeline for low-resource language translation</a>
+				<span class="text-muted"> — NYU Capstone</span>
 			</li>
 			<li>
-				<span class="text-muted">2023 &middot;</span>
+				<span class="text-muted">2023 · </span>
 				<a class="cactus-link" href="/publications/">Fusion of VAE-GANs and Siamese networks for face matching</a>
-				<span class="text-muted">&mdash; FICTA</span>
+				<span class="text-muted"> — FICTA</span>
 			</li>
 			<li>
-				<span class="text-muted">2023 &middot;</span>
+				<span class="text-muted">2023 · </span>
 				<a class="cactus-link" href="/publications/">UAV post-disaster assessment of residential buildings</a>
-				<span class="text-muted">&mdash; CSCE</span>
-			</li>
-			<li>
-				<span class="text-muted">2023 &middot;</span>
-				<a class="cactus-link" href="/publications/">Execution-time analysis of multithreading on seam carving</a>
-				<span class="text-muted">&mdash; AICAPS</span>
+				<span class="text-muted"> — CSCE</span>
 			</li>
 		</ul>
-		<p class="text-muted mt-4 text-xs">
-			Full list: <a class="cactus-link" href="/publications/">publications</a>,
-			<a class="cactus-link" href="/cv/">experience &amp; projects</a>.
-		</p>
 	</section>
 
-	<section class="mt-16 max-w-prose">
-		<h2 class="title text-accent mb-4 text-lg">Elsewhere</h2>
-		<p class="text-sm leading-relaxed">
-			I also take
-			<a class="cactus-link" href="/photos/">photographs</a>.
-			I don't post them to Meta properties because of the data-for-training policy, so they live here.
-		</p>
+	<section class="v1-section">
+		<div class="v1-section__head">
+			<div class="v1-section__title">contact</div>
+		</div>
+		<div class="v1-contact">
+			{socials.map((s) => (
+				<a
+					href={s.href}
+					rel={s.href.startsWith("http") ? "noreferrer" : undefined}
+					target={s.href.startsWith("http") ? "_blank" : undefined}
+				>
+					<span class="lbl">{s.label}</span>
+					<span>{s.handle} →</span>
+				</a>
+			))}
+		</div>
 	</section>
 </PageLayout>
+
+<script>
+	function bootTerminal() {
+		const el = document.querySelector<HTMLPreElement>("pre[data-terminal]");
+		if (!el) return;
+		const full = el.dataset.full ?? "";
+		if (!full) return;
+		let i = 0;
+		let bailed = false;
+
+		const render = (n: number) => {
+			const slice = full.slice(0, n);
+			const lines = slice.split("\n");
+			const out = lines
+				.map((line, idx) => {
+					const isPrompt = idx === 0 || idx === 2;
+					if (isPrompt) {
+						return `<span class="v1-hero__prompt">${line || "\u00a0"}</span>`;
+					}
+					return `<span>${line || "\u00a0"}</span>`;
+				})
+				.join("\n");
+			el.innerHTML = out;
+		};
+		render(0);
+
+		const tick = window.setInterval(() => {
+			if (bailed) return;
+			i++;
+			render(i);
+			if (i >= full.length) {
+				window.clearInterval(tick);
+				window.removeEventListener("scroll", onScroll);
+			}
+		}, 22);
+
+		const onScroll = () => {
+			if (bailed) return;
+			bailed = true;
+			window.clearInterval(tick);
+			render(full.length);
+			window.removeEventListener("scroll", onScroll);
+		};
+		window.addEventListener("scroll", onScroll, { passive: true, once: true });
+	}
+
+	bootTerminal();
+	document.addEventListener("astro:page-load", bootTerminal);
+</script>

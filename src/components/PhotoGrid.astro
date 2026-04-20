@@ -43,10 +43,25 @@ const resolved = await Promise.all(
 					class="w-full h-auto align-top"
 				/>
 				{(data.date || data.location || data.camera) && (
-					<div class="photo-meta text-muted">
-						{data.date && <span>{new Date(data.date).toISOString().slice(0, 10)}</span>}
-						{data.location && <span> &middot; {data.location}</span>}
-						{data.camera && <span> &middot; {data.camera}{data.lens ? `, ${data.lens}` : ""}</span>}
+					<div class="photo-exif">
+						{data.camera && (
+							<div class="row">
+								<span class="k">Cam</span>
+								<span>{data.camera}{data.lens ? `, ${data.lens}` : ""}</span>
+							</div>
+						)}
+						{data.location && (
+							<div class="row">
+								<span class="k">Loc</span>
+								<span>{data.location}</span>
+							</div>
+						)}
+						{data.date && (
+							<div class="row">
+								<span class="k">Date</span>
+								<span>{new Date(data.date).toISOString().slice(0, 10)}</span>
+							</div>
+						)}
 					</div>
 				)}
 			</a>
@@ -74,23 +89,6 @@ const resolved = await Promise.all(
 		display: block;
 		break-inside: avoid;
 		margin-bottom: 0.5rem;
-	}
-	.photo-meta {
-		position: absolute;
-		inset-inline-start: 0.5rem;
-		inset-block-end: 0.5rem;
-		font-size: 0.625rem;
-		line-height: 1;
-		letter-spacing: 0.02em;
-		opacity: 0;
-		transition: opacity 160ms ease;
-		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-		color: rgba(255, 255, 255, 0.95);
-		pointer-events: none;
-	}
-	.photo-cell:hover .photo-meta,
-	.photo-cell:focus-visible .photo-meta {
-		opacity: 1;
 	}
 </style>
 

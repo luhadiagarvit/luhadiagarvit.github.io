@@ -1,0 +1,136 @@
+---
+const routes: Array<{ keys: string; label: string }> = [
+	{ keys: "g h", label: "home" },
+	{ keys: "g p", label: "posts" },
+	{ keys: "g w", label: "writing (alias for posts)" },
+	{ keys: "g i", label: "images / photos" },
+	{ keys: "g u", label: "publications" },
+	{ keys: "g c", label: "contact" },
+	{ keys: "g n", label: "now" },
+	{ keys: "g m", label: "me / cv" },
+	{ keys: "g t", label: "toggle theme" },
+	{ keys: "⌘ K", label: "command palette" },
+	{ keys: "?", label: "this help" },
+];
+---
+
+<div class="leader" id="vim-leader" aria-hidden="true">G …</div>
+
+<div class="key-help" id="key-help" role="dialog" aria-label="Keyboard shortcuts" aria-hidden="true">
+	<div class="key-help__card">
+		<h3>Keyboard</h3>
+		{routes.map((r) => (
+			<div class="key-help__row">
+				<span class="key-help__keys">
+					{r.keys.split(" ").map((k) => (
+						<kbd>{k}</kbd>
+					))}
+				</span>
+				<span>{r.label}</span>
+			</div>
+		))}
+		<div class="key-help__hint">esc to close · try ↑↑↓↓←→←→ba (check console)</div>
+	</div>
+</div>
+
+<script>
+	function initVimLeader() {
+		const pill = document.getElementById("vim-leader");
+		const help = document.getElementById("key-help");
+		if (!pill || !help) return;
+
+		const routeMap: Record<string, string | (() => void)> = {
+			h: "/",
+			p: "/posts/",
+			w: "/posts/",
+			i: "/photos/",
+			u: "/publications/",
+			c: "/contact/",
+			n: "/now/",
+			m: "/cv/",
+			t: () => {
+				const current = document.documentElement.getAttribute("data-theme");
+				const next = current === "dark" ? "light" : "dark";
+				document.dispatchEvent(
+					new CustomEvent("theme-change", { detail: { theme: next } }),
+				);
+			},
+		};
+
+		let leaderArmed = false;
+		let leaderTimer: number | null = null;
+
+		const disarm = () => {
+			leaderArmed = false;
+			pill.classList.remove("is-on");
+			if (leaderTimer) {
+				window.clearTimeout(leaderTimer);
+				leaderTimer = null;
+			}
+		};
+
+		const arm = () => {
+			leaderArmed = true;
+			pill.classList.add("is-on");
+			if (leaderTimer) window.clearTimeout(leaderTimer);
+			leaderTimer = window.setTimeout(disarm, 1000);
+		};
+
+		const isEditable = (el: EventTarget | null) => {
+			if (!(el instanceof HTMLElement)) return false;
+			const tag = el.tagName;
+			return (
+				tag === "INPUT" ||
+				tag === "TEXTAREA" ||
+				tag === "SELECT" ||
+				el.isContentEditable
+			);
+		};
+
+		const onKey = (e: KeyboardEvent) => {
+			if (isEditable(e.target)) return;
+			if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+			if (e.key === "Escape") {
+				help.classList.remove("is-open");
+				help.setAttribute("aria-hidden", "true");
+				disarm();
+				return;
+			}
+
+			if (e.key === "?") {
+				e.preventDefault();
+				const open = help.classList.toggle("is-open");
+				help.setAttribute("aria-hidden", open ? "false" : "true");
+				return;
+			}
+
+			if (leaderArmed) {
+				const target = routeMap[e.key.toLowerCase()];
+				disarm();
+				if (typeof target === "string") {
+					window.location.href = target;
+				} else if (typeof target === "function") {
+					target();
+				}
+				return;
+			}
+
+			if (e.key === "g") {
+				arm();
+			}
+		};
+
+		help.addEventListener("click", (e) => {
+			if (e.target === help) {
+				help.classList.remove("is-open");
+				help.setAttribute("aria-hidden", "true");
+			}
+		});
+
+		document.addEventListener("keydown", onKey);
+	}
+
+	initVimLeader();
+	document.addEventListener("astro:page-load", initVimLeader);
+</script>

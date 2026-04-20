@@ -1,0 +1,35 @@
+<script>
+	const SEQUENCE = [
+		"ArrowUp", "ArrowUp",
+		"ArrowDown", "ArrowDown",
+		"ArrowLeft", "ArrowRight",
+		"ArrowLeft", "ArrowRight",
+		"KeyB", "KeyA",
+	];
+
+	const QUOTE = [
+		"─────────────────────────────────────────────",
+		" Above all else show the data.",
+		"          — Edward R. Tufte, The Visual Display of Quantitative Information",
+		"─────────────────────────────────────────────",
+		"",
+		" (you found the konami. welcome.)",
+	].join("\n");
+
+	function initKonami() {
+		const buf: string[] = [];
+		document.addEventListener("keydown", (e) => {
+			buf.push(e.code);
+			if (buf.length > SEQUENCE.length) buf.shift();
+			if (buf.length === SEQUENCE.length && SEQUENCE.every((k, i) => buf[i] === k)) {
+				buf.length = 0;
+				console.log(
+					"%c" + QUOTE,
+					"font-family: ui-monospace, 'Roboto Mono', monospace; font-size: 12px; line-height: 1.5; color: #6ee7b7;",
+				);
+			}
+		});
+	}
+
+	initKonami();
+</script>

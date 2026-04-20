@@ -1,0 +1,120 @@
+<span class="site-footer__commit" id="last-commit" aria-live="polite"></span>
+
+<script>
+	type Commit = { repo: string; message: string; url: string; date: string };
+
+	const CACHE_KEY = "gl.lastCommit.v1";
+	const CACHE_TTL_MS = 60 * 60 * 1000;
+	const USER = "luhadiagarvit";
+
+	function relativeTime(iso: string): string {
+		const diff = Date.now() - new Date(iso).getTime();
+		if (!isFinite(diff) || diff < 0) return "";
+		const mins = Math.floor(diff / 60000);
+		if (mins < 60) return `${Math.max(1, mins)}m ago`;
+		const hours = Math.floor(mins / 60);
+		if (hours < 24) return `${hours}h ago`;
+		const days = Math.floor(hours / 24);
+		if (days < 30) return `${days}d ago`;
+		const months = Math.floor(days / 30);
+		if (months < 12) return `${months}mo ago`;
+		return `${Math.floor(months / 12)}y ago`;
+	}
+
+	async function fetchCommits(): Promise<Commit[]> {
+		const res = await fetch(
+			`https://api.github.com/users/${USER}/events/public?per_page=30`,
+			{ headers: { Accept: "application/vnd.github+json" } },
+		);
+		if (!res.ok) throw new Error("github api " + res.status);
+		const data = await res.json();
+		const out: Commit[] = [];
+		for (const evt of data) {
+			if (evt.type !== "PushEvent") continue;
+			const repo = (evt.repo?.name ?? "").split("/")[1] ?? evt.repo?.name ?? "";
+			const commits = evt.payload?.commits ?? [];
+			for (const c of commits.slice().reverse()) {
+				if (!c?.message) continue;
+				const first = String(c.message).split("\n")[0]!.slice(0, 70);
+				out.push({
+					repo,
+					message: first,
+					url: `https://github.com/${evt.repo?.name}/commit/${c.sha}`,
+					date: evt.created_at,
+				});
+				if (out.length >= 3) return out;
+			}
+			if (out.length >= 3) break;
+		}
+		return out;
+	}
+
+	function readCache(): Commit[] | null {
+		try {
+			const raw = localStorage.getItem(CACHE_KEY);
+			if (!raw) return null;
+			const parsed = JSON.parse(raw);
+			if (!parsed?.ts || Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+			return parsed.commits ?? null;
+		} catch {
+			return null;
+		}
+	}
+
+	function writeCache(commits: Commit[]) {
+		try {
+			localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), commits }));
+		} catch {
+			/* quota exceeded or private mode — ignore */
+		}
+	}
+
+	let cycleTimer: number | null = null;
+
+	function renderCycle(commits: Commit[]) {
+		const el = document.getElementById("last-commit");
+		if (!el || commits.length === 0) return;
+		if (cycleTimer) window.clearInterval(cycleTimer);
+		let idx = 0;
+		const paint = () => {
+			const c = commits[idx % commits.length]!;
+			const repoLabel = c.repo ? c.repo + " · " : "";
+			el.innerHTML = "";
+			const prefix = document.createTextNode("last commit · ");
+			const link = document.createElement("a");
+			link.href = c.url;
+			link.target = "_blank";
+			link.rel = "noreferrer";
+			link.textContent = `${repoLabel}${c.message} (${relativeTime(c.date)})`;
+			el.appendChild(prefix);
+			el.appendChild(link);
+			idx++;
+		};
+		paint();
+		if (commits.length > 1) {
+			cycleTimer = window.setInterval(paint, 5200);
+		}
+	}
+
+	async function initLastCommit() {
+		const el = document.getElementById("last-commit");
+		if (!el) return;
+		const cached = readCache();
+		if (cached && cached.length > 0) {
+			renderCycle(cached);
+			return;
+		}
+		try {
+			const commits = await fetchCommits();
+			if (commits.length > 0) {
+				writeCache(commits);
+				renderCycle(commits);
+			}
+		} catch {
+			/* offline or rate-limited — render nothing, footer still works */
+		}
+	}
+
+	initLastCommit();
+	document.addEventListener("astro:page-load", initLastCommit);
+</script>

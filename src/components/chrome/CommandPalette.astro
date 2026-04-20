@@ -1,0 +1,167 @@
+---
+import { menuLinks } from "@/site.config";
+
+const commands = [
+	...menuLinks.map((m) => ({ label: m.title, hint: m.path, kind: "route" })),
+	{ label: "toggle theme", hint: "g t", kind: "theme" },
+	{ label: "copy page URL", hint: "clipboard", kind: "copy-url" },
+	{ label: "open GitHub", hint: "new tab", kind: "ext", href: "https://github.com/luhadiagarvit" },
+	{ label: "open Google Scholar", hint: "new tab", kind: "ext", href: "https://scholar.google.com/citations?user=wn8NmyQAAAAJ" },
+	{ label: "open ORCID", hint: "new tab", kind: "ext", href: "https://orcid.org/0009-0004-1836-8951" },
+	{ label: "open Kaggle", hint: "new tab", kind: "ext", href: "https://www.kaggle.com/luhadiagarvit" },
+];
+---
+
+<div
+	class="palette-backdrop"
+	id="command-palette"
+	role="dialog"
+	aria-label="Command palette"
+	aria-hidden="true"
+>
+	<div class="palette">
+		<input
+			type="text"
+			id="command-palette-input"
+			placeholder="type a command or page…"
+			autocomplete="off"
+			spellcheck="false"
+		/>
+		<ul class="palette-list" id="command-palette-list" role="listbox"></ul>
+		<div class="palette-foot">
+			<span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+			<span><kbd>↵</kbd> select</span>
+			<span><kbd>esc</kbd> close</span>
+		</div>
+	</div>
+</div>
+
+<script is:inline define:vars={{ commands }}>
+	window.__commandPaletteCommands = commands;
+</script>
+
+<script>
+	type Command = {
+		label: string;
+		hint: string;
+		kind: "route" | "theme" | "copy-url" | "ext";
+		href?: string;
+	};
+
+	function initCommandPalette() {
+		const backdrop = document.getElementById("command-palette");
+		const input = document.getElementById("command-palette-input") as HTMLInputElement | null;
+		const list = document.getElementById("command-palette-list") as HTMLUListElement | null;
+		if (!backdrop || !input || !list) return;
+
+		const commands = (window as unknown as { __commandPaletteCommands?: Command[] })
+			.__commandPaletteCommands ?? [];
+
+		let filtered: Command[] = commands;
+		let cursor = 0;
+
+		const match = (q: string, s: string) => s.toLowerCase().includes(q.toLowerCase());
+
+		const render = () => {
+			list.innerHTML = "";
+			filtered.forEach((cmd, idx) => {
+				const li = document.createElement("li");
+				li.className = "palette-item" + (idx === cursor ? " is-selected" : "");
+				li.setAttribute("role", "option");
+				li.setAttribute("data-idx", String(idx));
+				const label = document.createElement("span");
+				label.className = "palette-item__label";
+				label.textContent = cmd.label;
+				const hint = document.createElement("span");
+				hint.className = "palette-item__hint";
+				hint.textContent = cmd.hint;
+				li.appendChild(label);
+				li.appendChild(hint);
+				li.addEventListener("mouseenter", () => {
+					cursor = idx;
+					render();
+				});
+				li.addEventListener("click", () => {
+					execute(cmd);
+				});
+				list.appendChild(li);
+			});
+		};
+
+		const execute = (cmd: Command) => {
+			close();
+			if (cmd.kind === "route") {
+				window.location.href = cmd.hint;
+			} else if (cmd.kind === "theme") {
+				const current = document.documentElement.getAttribute("data-theme");
+				const next = current === "dark" ? "light" : "dark";
+				document.dispatchEvent(
+					new CustomEvent("theme-change", { detail: { theme: next } }),
+				);
+			} else if (cmd.kind === "copy-url") {
+				navigator.clipboard?.writeText(window.location.href);
+			} else if (cmd.kind === "ext" && cmd.href) {
+				window.open(cmd.href, "_blank", "noreferrer");
+			}
+		};
+
+		const open = () => {
+			backdrop.classList.add("is-open");
+			backdrop.setAttribute("aria-hidden", "false");
+			input.value = "";
+			filtered = commands;
+			cursor = 0;
+			render();
+			window.setTimeout(() => input.focus(), 20);
+		};
+
+		const close = () => {
+			backdrop.classList.remove("is-open");
+			backdrop.setAttribute("aria-hidden", "true");
+			input.blur();
+		};
+
+		document.addEventListener("keydown", (e) => {
+			const isOpen = backdrop.classList.contains("is-open");
+			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+				e.preventDefault();
+				if (isOpen) close();
+				else open();
+				return;
+			}
+			if (!isOpen) return;
+			if (e.key === "Escape") {
+				e.preventDefault();
+				close();
+			} else if (e.key === "ArrowDown") {
+				e.preventDefault();
+				cursor = Math.min(filtered.length - 1, cursor + 1);
+				render();
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				cursor = Math.max(0, cursor - 1);
+				render();
+			} else if (e.key === "Enter") {
+				e.preventDefault();
+				const cmd = filtered[cursor];
+				if (cmd) execute(cmd);
+			}
+		});
+
+		input.addEventListener("input", () => {
+			const q = input.value.trim();
+			filtered = q ? commands.filter((c) => match(q, c.label) || match(q, c.hint)) : commands;
+			cursor = 0;
+			render();
+		});
+
+		backdrop.addEventListener("click", (e) => {
+			if (e.target === backdrop) close();
+		});
+
+		render();
+	}
+
+	initCommandPalette();
+	document.addEventListener("astro:page-load", initCommandPalette);
+</script>
