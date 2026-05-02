@@ -32,8 +32,8 @@ const publications = defineCollection({
 	}),
 });
 
-const post = defineCollection({
-	loader: glob({ base: "./src/content/post", pattern: "**/*.{md,mdx}" }),
+const notes = defineCollection({
+	loader: glob({ base: "./src/content/notes", pattern: "**/*.{md,mdx}" }),
 	schema: ({ image }) =>
 		z.object({
 			title: z.string(),
@@ -49,7 +49,20 @@ const post = defineCollection({
 					alt: z.string().default(""),
 				})
 				.optional(),
+			kind: z.enum(["post", "note", "evergreen"]).default("note"),
 		}),
 });
 
-export const collections = { photos, publications, post };
+const commitments = defineCollection({
+	loader: glob({ base: "./src/content/commitments", pattern: "**/*.{md,mdx}" }),
+	schema: z.object({
+		week: z.string().regex(/^\d{4}-W\d{2}$/),
+		text: z.string(),
+		state: z.enum(["doing", "done", "missed"]).default("doing"),
+		link: z.string().optional(),
+		deadline: z.string().or(z.date()).transform((v) => new Date(v)).optional(),
+		order: z.number().default(0),
+	}),
+});
+
+export const collections = { photos, publications, notes, commitments };

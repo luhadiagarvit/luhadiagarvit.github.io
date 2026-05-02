@@ -7,14 +7,14 @@ import TOC from "@/components/TOC.astro";
 import { readingTime } from "@/utils/readingTime";
 
 export async function getStaticPaths() {
-	const posts = await getCollection("post", ({ data }) => !data.draft);
-	const sorted = posts.sort(
+	const notes = await getCollection("notes", ({ data }) => !data.draft);
+	const sorted = notes.sort(
 		(a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime(),
 	);
-	return sorted.map((post, i) => ({
-		params: { slug: post.id },
+	return sorted.map((note, i) => ({
+		params: { slug: note.id },
 		props: {
-			post,
+			note,
 			prev: sorted[i + 1] ?? null,
 			next: sorted[i - 1] ?? null,
 		},
@@ -22,23 +22,23 @@ export async function getStaticPaths() {
 }
 
 interface Props {
-	post: CollectionEntry<"post">;
-	prev: CollectionEntry<"post"> | null;
-	next: CollectionEntry<"post"> | null;
+	note: CollectionEntry<"notes">;
+	prev: CollectionEntry<"notes"> | null;
+	next: CollectionEntry<"notes"> | null;
 }
 
-const { post, prev, next } = Astro.props;
-const { Content, headings } = await render(post);
-const minutes = readingTime(post.body ?? "");
+const { note, prev, next } = Astro.props;
+const { Content, headings } = await render(note);
+const minutes = readingTime(note.body ?? "");
 
 const tocItems = headings
 	.filter((h) => h.depth === 2 || h.depth === 3)
 	.map((h) => ({ id: h.slug, label: h.text }));
 
 const meta = {
-	title: post.data.title,
-	description: post.data.description,
-	articleDate: post.data.publishDate.toISOString(),
+	title: note.data.title,
+	description: note.data.description,
+	articleDate: note.data.publishDate.toISOString(),
 };
 ---
 
@@ -46,18 +46,23 @@ const meta = {
 	{tocItems.length > 2 && <TOC items={tocItems} />}
 	<article class="max-w-prose">
 		<header class="mb-8">
-			<h1 class="title mb-3 text-2xl leading-tight">{post.data.title}</h1>
+			<h1 class="title mb-3 text-2xl leading-tight">
+				{note.data.kind !== "note" && (
+					<span class="kindmark">{note.data.kind}</span>
+				)}
+				{note.data.title}
+			</h1>
 			<div class="text-muted flex flex-wrap gap-x-3 text-xs">
-				<FormattedDate date={post.data.publishDate} />
+				<FormattedDate date={note.data.publishDate} />
 				<span>&middot;</span>
 				<span>{minutes}</span>
 				{
-					post.data.tags.length > 0 && (
+					note.data.tags.length > 0 && (
 						<>
 							<span>&middot;</span>
 							<span class="flex flex-wrap gap-x-2">
-								{post.data.tags.map((t) => (
-									<a class="cactus-link" href={`/tags/${t}/`}>
+								{note.data.tags.map((t) => (
+									<a class="cactus-link" href={`/notes/tag/${t}/`}>
 										#{t}
 									</a>
 								))}
@@ -76,14 +81,14 @@ const meta = {
 			(prev || next) && (
 				<nav class="mt-12 flex justify-between gap-8 text-sm" aria-label="post navigation">
 					{prev ? (
-						<a class="cactus-link" href={`/posts/${prev.id}/`}>
+						<a class="cactus-link" href={`/notes/${prev.id}/`}>
 							&larr; {prev.data.title}
 						</a>
 					) : (
 						<span />
 					)}
 					{next ? (
-						<a class="cactus-link text-right" href={`/posts/${next.id}/`}>
+						<a class="cactus-link text-right" href={`/notes/${next.id}/`}>
 							{next.data.title} &rarr;
 						</a>
 					) : (

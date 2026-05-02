@@ -4,6 +4,7 @@ description: Delete me and add a real post.
 publishDate: 2026-04-18
 tags: [meta]
 draft: true
+kind: post
 ---
 
 This file keeps the `post` collection populated so `astro check` stays

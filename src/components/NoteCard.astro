@@ -1,0 +1,42 @@
+---
+import FormattedDate from "@/components/FormattedDate.astro";
+import type { CollectionEntry } from "astro:content";
+import { readingTime } from "@/utils/readingTime";
+
+interface Props {
+	note: CollectionEntry<"notes">;
+}
+
+const { note } = Astro.props;
+const minutes = readingTime(note.body ?? "");
+const kind = note.data.kind;
+---
+
+<article class="max-w-prose">
+	<a class="group block" href={`/notes/${note.id}/`}>
+		<h3 class="text-accent-2 group-hover:text-link text-base font-medium leading-snug">
+			{kind !== "note" && (
+				<span class="kindmark">{kind === "post" ? "post" : "ev"}</span>
+			)}
+			{note.data.title}
+		</h3>
+		{
+			note.data.description && (
+				<p class="text-muted mt-1 text-sm leading-relaxed">{note.data.description}</p>
+			)
+		}
+		<div class="text-muted mt-2 flex flex-wrap gap-x-3 text-xs">
+			<FormattedDate date={note.data.publishDate} />
+			<span>&middot;</span>
+			<span>{minutes}</span>
+			{
+				note.data.tags.length > 0 && (
+					<>
+						<span>&middot;</span>
+						<span>{note.data.tags.map((t) => `#${t}`).join(" ")}</span>
+					</>
+				)
+			}
+		</div>
+	</a>
+</article>

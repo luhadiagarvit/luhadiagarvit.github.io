@@ -30,7 +30,7 @@ function card(title: string) {
 }
 
 export async function getStaticPaths() {
-	const posts = await getCollection("post", ({ data }) => !data.draft);
+	const notes = await getCollection("notes", ({ data }) => !data.draft);
 	const publications = await getCollection("publications");
 
 	const pages: { slug: string; title: string }[] = [
@@ -40,14 +40,14 @@ export async function getStaticPaths() {
 		{ slug: "cv", title: "CV" },
 		{ slug: "contact", title: "Contact" },
 		{ slug: "now", title: "Now" },
-		{ slug: "posts", title: "Posts" },
-		{ slug: "tags", title: "Tags" },
+		{ slug: "notes", title: "Notes" },
+		{ slug: "notes/evergreens", title: "Evergreens" },
 	];
 
 	return [
 		...pages.map((p) => ({ params: { slug: p.slug }, props: { title: p.title } })),
-		...posts.map((p) => ({
-			params: { slug: `posts/${p.id}` },
+		...notes.map((p) => ({
+			params: { slug: `notes/${p.id}` },
 			props: { title: p.data.title },
 		})),
 		...publications.map((p) => ({

@@ -4,14 +4,17 @@ import { siteConfig } from "@/site.config";
 import type { APIContext } from "astro";
 
 export async function GET(context: APIContext) {
-	const posts = await getCollection("post", ({ data }) => !data.draft);
+	const posts = await getCollection(
+		"notes",
+		({ data }) => !data.draft && data.kind === "post",
+	);
 	const publications = await getCollection("publications");
 
 	const postItems = posts.map((p) => ({
 		title: p.data.title,
 		description: p.data.description,
 		pubDate: p.data.publishDate,
-		link: `/posts/${p.id}/`,
+		link: `/notes/${p.id}/`,
 		categories: p.data.tags,
 	}));
 

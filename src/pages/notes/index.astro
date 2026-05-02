@@ -1,0 +1,113 @@
+---
+import { getCollection } from "astro:content";
+import PageLayout from "@/layouts/Base.astro";
+
+const notes = (await getCollection("notes", ({ data }) => !data.draft)).sort(
+	(a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime(),
+);
+
+const tagCounts = new Map<string, number>();
+let postCount = 0;
+let evergreenCount = 0;
+for (const note of notes) {
+	for (const tag of note.data.tags) {
+		tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+	}
+	if (note.data.kind === "post") postCount++;
+	if (note.data.kind === "evergreen") evergreenCount++;
+}
+
+const sortedTags = Array.from(tagCounts.entries()).sort(
+	(a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+);
+
+const kindChips: { tag: string; count: number }[] = [];
+if (postCount > 0) kindChips.push({ tag: "post", count: postCount });
+if (evergreenCount > 0) kindChips.push({ tag: "evergreen", count: evergreenCount });
+
+const meta = {
+	title: "Notes",
+	description: "Notes, posts, and evergreens by Garvit Luhadia.",
+};
+---
+
+<PageLayout meta={meta}>
+	<section class="mb-8">
+		<h1 class="title mb-4 text-2xl">Notes</h1>
+		<p class="text-muted max-w-prose text-sm leading-relaxed">
+			A working second brain — append-only. Posts, notes, and evergreens together.
+		</p>
+	</section>
+
+	{
+		notes.length === 0 ? (
+			<p class="text-muted max-w-prose text-sm italic">
+				Nothing published yet. When I do, it'll show up here and on the{" "}
+				<a class="cactus-link" href="/rss.xml">
+					RSS feed
+				</a>
+				.
+			</p>
+		) : (
+			<>
+				<div class="tagstrip" id="tagstrip">
+					<button class="tagchip-btn is-on" data-tag="all" type="button">
+						all <span class="ct">{notes.length}</span>
+					</button>
+					{kindChips.map((c) => (
+						<button class="tagchip-btn" data-tag={c.tag} type="button">
+							{c.tag} <span class="ct">{c.count}</span>
+						</button>
+					))}
+					{sortedTags.map(([tag, count]) => (
+						<button class="tagchip-btn" data-tag={tag} type="button">
+							{tag} <span class="ct">{count}</span>
+						</button>
+					))}
+				</div>
+
+				<div class="nb-grid" id="nb-grid">
+					{notes.map((n) => {
+						const dataTags = [n.data.kind, ...n.data.tags].join(",");
+						const date = n.data.publishDate.toISOString().slice(0, 10);
+						return (
+							<a class="nb-row" href={`/notes/${n.id}/`} data-tags={dataTags}>
+								<span class="nb-row__date">{date}</span>
+								<span class="nb-row__title">
+									{n.data.kind !== "note" && (
+										<span class="kindmark">{n.data.kind === "post" ? "post" : "ev"}</span>
+									)}
+									{n.data.title}
+								</span>
+								<span class="nb-row__meta">
+									{n.data.tags.map((t) => `#${t}`).join(" ")}
+								</span>
+							</a>
+						);
+					})}
+				</div>
+			</>
+		)
+	}
+</PageLayout>
+
+<script>
+	function bindTagstrip() {
+		const strip = document.getElementById("tagstrip");
+		const grid = document.getElementById("nb-grid");
+		if (!strip || !grid) return;
+		strip.querySelectorAll<HTMLButtonElement>("button").forEach((btn) => {
+			btn.addEventListener("click", () => {
+				strip.querySelectorAll("button").forEach((b) => b.classList.remove("is-on"));
+				btn.classList.add("is-on");
+				const tag = btn.dataset.tag ?? "all";
+				grid.querySelectorAll<HTMLElement>(".nb-row").forEach((row) => {
+					const tags = (row.dataset.tags ?? "").split(",");
+					row.style.display = tag === "all" || tags.includes(tag) ? "grid" : "none";
+				});
+			});
+		});
+	}
+	bindTagstrip();
+	document.addEventListener("astro:page-load", bindTagstrip);
+</script>
