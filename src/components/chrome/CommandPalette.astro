@@ -115,6 +115,8 @@ const commands = [
 			window.setTimeout(() => input.focus(), 20);
 		};
 
+		(window as unknown as { __openCommandPalette?: () => void }).__openCommandPalette = open;
+
 		const close = () => {
 			backdrop.classList.remove("is-open");
 			backdrop.setAttribute("aria-hidden", "true");

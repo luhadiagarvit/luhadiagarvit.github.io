@@ -1,37 +1,61 @@
 ---
 import ThemeToggle from "@/components/ThemeToggle.astro";
-import { menuLinks, siteConfig } from "@/site.config";
+import { menuLinks } from "@/site.config";
 ---
 
-<header class="relative mb-16 flex flex-col gap-y-4 sm:mb-20 sm:flex-row sm:items-center sm:justify-between" id="main-header">
+<header
+	class="mb-16 grid grid-cols-[auto_1fr_auto] items-center gap-x-6 sm:mb-20"
+	id="main-header"
+>
 	<a
 		aria-current={Astro.url.pathname === "/" ? "page" : false}
-		class="inline-flex items-baseline gap-x-2"
+		class="brand inline-flex items-baseline text-base font-semibold tracking-tight"
 		href="/"
 	>
-		<span class="text-base font-semibold tracking-tight">{siteConfig.title}</span>
-		<span class="text-muted hidden text-xs sm:inline">/ luhadiagarvit</span>
+		<span class="slash text-muted">/</span>luhadiagarvit
 	</a>
-	<div class="flex items-center gap-x-4">
-		<nav aria-label="Main menu">
-			<ul class="flex flex-wrap gap-x-4 text-xs sm:text-sm" role="list">
-				{
-					menuLinks
-						.filter((link) => link.path !== "/")
-						.map((link) => (
-							<li>
-								<a
-									aria-current={Astro.url.pathname.startsWith(link.path) && link.path !== "/" ? "page" : false}
-									class="text-muted hover:text-accent aria-[current=page]:text-accent"
-									href={link.path}
-								>
-									{link.title}
-								</a>
-							</li>
-						))
-				}
-			</ul>
-		</nav>
+	<nav aria-label="Main menu" class="justify-self-end">
+		<ul class="flex flex-wrap gap-x-4 text-xs sm:text-sm" role="list">
+			{
+				menuLinks
+					.filter((link) => link.path !== "/")
+					.map((link) => (
+						<li>
+							<a
+								aria-current={Astro.url.pathname.startsWith(link.path) && link.path !== "/" ? "page" : false}
+								class="text-muted hover:text-accent aria-[current=page]:text-accent"
+								href={link.path}
+							>
+								{link.title}
+							</a>
+						</li>
+					))
+			}
+		</ul>
+	</nav>
+	<div class="flex items-center gap-x-3 justify-self-end">
+		<button
+			type="button"
+			id="open-command-palette"
+			class="palette-trigger text-muted hover:text-accent text-xs"
+			aria-label="Open command palette"
+		>
+			⌘K
+		</button>
 		<ThemeToggle />
 	</div>
 </header>
+
+<script>
+	function initOpenPaletteButton() {
+		const btn = document.getElementById("open-command-palette");
+		if (!btn) return;
+		btn.addEventListener("click", () => {
+			const w = window as unknown as { __openCommandPalette?: () => void };
+			w.__openCommandPalette?.();
+		});
+	}
+
+	initOpenPaletteButton();
+	document.addEventListener("astro:page-load", initOpenPaletteButton);
+</script>
