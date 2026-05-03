@@ -20,10 +20,14 @@ const tocItems = [
 	<TOC items={tocItems} />
 	<section class="max-w-prose">
 		<h1 class="title mb-6 text-2xl">CV</h1>
-		<p class="text-muted mb-8 text-sm">
-			Full PDF:
-			<a class="cactus-link" download href="/cv.pdf">download cv.pdf</a>.
-		</p>
+		<div class="cv-actions">
+			<a class="cv-btn" download href="/cv.pdf">
+				<span class="icon">↓</span> Download PDF
+			</a>
+			<button class="cv-btn is-ghost" type="button" onclick="window.print()">
+				<span class="icon">⎙</span> Print
+			</button>
+		</div>
 
 		<h2 class="title text-accent mt-10 mb-3 text-lg" id="education">Education</h2>
 		<ul class="space-y-3 text-sm" role="list">
