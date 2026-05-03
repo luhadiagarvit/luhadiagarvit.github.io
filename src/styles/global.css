@@ -684,3 +684,59 @@
 	a[href^="mailto:"]::after { content: ""; }
 	body { font-size: 10.5pt; line-height: 1.45; }
 }
+
+/* === v3 scaffold ============================================
+ * Step 1 owns .uvsync*. The other selectors are placeholders
+ * that later steps fill in. Keep the section append-only — do
+ * not interleave new rules above without coordinating with the
+ * v3 plan.
+ * ============================================================ */
+
+/* uvsync — home install animation (Phase 1).
+ * Phase 2 (ask-input) lands in v3 step 3 and will reuse these tokens. */
+.uvsync { font-size: 13px; line-height: 1.55; color: var(--color-global-text); }
+.uvsync .ln { display: flex; gap: 10px; align-items: baseline; padding: 1px 0; white-space: pre; font-variant-numeric: tabular-nums; }
+.uvsync .ln.cmd { color: var(--color-accent-2); }
+.uvsync .ln .prompt { color: var(--color-accent); }
+.uvsync .ln .glyph { width: 14px; flex-shrink: 0; color: var(--color-accent); text-align: center; }
+.uvsync .ln .glyph.done { color: oklch(60% 0.14 145); }
+.uvsync .ln .glyph.muted { color: var(--color-muted); }
+.uvsync .ln .lbl { color: var(--color-global-text); }
+.uvsync .ln .dim { color: var(--color-muted); }
+.uvsync .ln .ver { color: var(--color-muted); }
+.uvsync .ln .bar { color: oklch(60% 0.14 145); letter-spacing: -1px; }
+.uvsync .ln .bar.partial { color: var(--color-accent); }
+.uvsync .ln .bar.empty { color: var(--color-rule); }
+.uvsync .cur::after { content: "▮"; color: var(--color-accent); animation: blink 1s steps(2) infinite; margin-left: 2px; }
+.uvsync .summary { color: oklch(55% 0.13 145); }
+[data-theme="dark"] .uvsync .summary { color: oklch(72% 0.12 145); }
+[data-theme="dark"] .uvsync .ln .bar { color: oklch(72% 0.12 145); }
+
+/* alltrails — filled in v3 step 8 */
+.alltrails { /* placeholder */ }
+
+/* portrait 5-level — filled in v3 step 7 */
+.portrait-l1 { /* placeholder */ }
+.portrait-l2 { /* placeholder */ }
+.portrait-l3 { /* placeholder */ }
+.portrait-l4 { /* placeholder */ }
+.portrait-l5 { /* placeholder */ }
+
+/* note neighborhood — filled in v3 step 4 */
+.note-neighborhood { /* placeholder */ }
+.note-with-rail { /* placeholder */ }
+
+/* wikilink stub indicator — filled in v3 step 2 */
+.stub-link { /* placeholder */ }
+
+/* graph + stubs pages — filled in v3 steps 5/6 */
+.graph-canvas { /* placeholder */ }
+.stubs-list { /* placeholder */ }
+
+/* now-page last-updated stamp — filled in v3 step 10 */
+.now-stamp { /* placeholder */ }
+
+/* legacy BootStream classes preserved as fallback per design v3 spec lines 158–180.
+ * BootStream.astro stays on disk and may be re-mounted under the .boot-legacy
+ * scope if a future step needs the old hero. The actual .boot* rules live above. */
+.boot-legacy { /* preserved */ }

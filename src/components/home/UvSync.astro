@@ -1,0 +1,201 @@
+<section class="uvsync" data-uvsync>
+	<div data-uv-stream></div>
+</section>
+
+<script>
+	type UvPkg = { name: string; ver: string };
+
+	const UV_PKGS: UvPkg[] = [
+		{ name: "torch", ver: "2.4.1" },
+		{ name: "transformers", ver: "4.45.0" },
+		{ name: "onnxruntime", ver: "1.19.2" },
+		{ name: "numpy", ver: "2.1.1" },
+		{ name: "fastapi", ver: "0.115.0" },
+	];
+	const SPIN_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+	const BAR_WIDTH = 16;
+
+	function bar(pct: number): string {
+		const filled = Math.round((pct / 100) * BAR_WIDTH);
+		return "█".repeat(filled) + "░".repeat(BAR_WIDTH - filled);
+	}
+
+	function sleep(ms: number): Promise<void> {
+		return new Promise((res) => window.setTimeout(res, ms));
+	}
+
+	async function typeInto(el: Element, text: string, speed = 38): Promise<void> {
+		for (let i = 1; i <= text.length; i++) {
+			el.textContent = text.slice(0, i);
+			await sleep(speed);
+		}
+	}
+
+	type Phase = { text: string; dur: number };
+
+	function spinCycle(el: HTMLElement, phases: Phase[]): Promise<void> {
+		const glyph = el.querySelector<HTMLElement>(".glyph");
+		const lbl = el.querySelector<HTMLElement>(".lbl");
+		if (!glyph || !lbl) return Promise.resolve();
+		let frame = 0;
+		let phaseIdx = 0;
+		const t0 = performance.now();
+		lbl.textContent = phases[0]?.text ?? "";
+		return new Promise((res) => {
+			const tick = () => {
+				const elapsed = performance.now() - t0;
+				let cumulative = 0;
+				let nextPhase = 0;
+				for (let i = 0; i < phases.length; i++) {
+					cumulative += phases[i]!.dur;
+					if (elapsed < cumulative) {
+						nextPhase = i;
+						break;
+					}
+					nextPhase = i + 1;
+				}
+				if (nextPhase >= phases.length) {
+					res();
+					return;
+				}
+				if (nextPhase !== phaseIdx) {
+					phaseIdx = nextPhase;
+					lbl.textContent = phases[phaseIdx]!.text;
+				}
+				glyph.textContent = SPIN_FRAMES[frame++ % SPIN_FRAMES.length] ?? "";
+				requestAnimationFrame(tick);
+			};
+			requestAnimationFrame(tick);
+		});
+	}
+
+	function renderFinalState(stream: HTMLElement): void {
+		stream.innerHTML = "";
+
+		const cmdLine = document.createElement("div");
+		cmdLine.className = "ln cmd";
+		cmdLine.innerHTML = `<span class="prompt">$</span><span class="lbl">uv sync</span>`;
+		stream.appendChild(cmdLine);
+
+		const resolved = document.createElement("div");
+		resolved.className = "ln";
+		resolved.innerHTML = `<span class="glyph done">✓</span><span class="lbl">Resolved <b>47 packages</b> <span class="dim">in 312ms</span></span>`;
+		stream.appendChild(resolved);
+
+		for (const p of UV_PKGS) {
+			const ln = document.createElement("div");
+			ln.className = "ln";
+			const pad = " ".repeat(Math.max(0, 14 - p.name.length));
+			ln.innerHTML =
+				`<span class="glyph done">✓</span>` +
+				`<span class="lbl">${p.name}${pad}<span class="ver">${p.ver}</span></span>` +
+				`<span class="bar">${bar(100)}</span>`;
+			stream.appendChild(ln);
+		}
+
+		const sumLine = document.createElement("div");
+		sumLine.className = "ln";
+		sumLine.innerHTML = `<span class="glyph done">✓</span><span class="lbl summary"><b>Installed 47 packages in 1.21s</b> <span class="dim">· 38 already cached</span></span>`;
+		stream.appendChild(sumLine);
+	}
+
+	async function runUvSync(): Promise<void> {
+		const root = document.querySelector<HTMLElement>("[data-uvsync]");
+		if (!root) return;
+		const stream = root.querySelector<HTMLElement>("[data-uv-stream]");
+		if (!stream) return;
+
+		// Skip the install on revisit — render the final state immediately.
+		const skip = sessionStorage.getItem("uvsync.done") === "1";
+		if (skip) {
+			renderFinalState(stream);
+			return;
+		}
+
+		stream.innerHTML = "";
+
+		// Phase 1a: type the command.
+		const cmdLine = document.createElement("div");
+		cmdLine.className = "ln cmd";
+		cmdLine.innerHTML = `<span class="prompt">$</span><span class="lbl"></span><span class="cur"></span>`;
+		stream.appendChild(cmdLine);
+		const cmdLbl = cmdLine.querySelector<HTMLElement>(".lbl");
+		if (cmdLbl) await typeInto(cmdLbl, "uv sync", 50);
+		cmdLine.querySelector(".cur")?.remove();
+		await sleep(180);
+
+		// Phase 1b: ephemeral one-line cycle — Resolving → Downloading → Linking.
+		const cycle = document.createElement("div");
+		cycle.className = "ln";
+		cycle.innerHTML = `<span class="glyph">⠋</span><span class="lbl">Resolving...</span>`;
+		stream.appendChild(cycle);
+		await spinCycle(cycle, [
+			{ text: "Resolving dependencies...", dur: 380 },
+			{ text: "Downloading wheels...", dur: 360 },
+			{ text: "Linking 47 files...", dur: 280 },
+		]);
+		cycle.innerHTML = `<span class="glyph done">✓</span><span class="lbl">Resolved <b>47 packages</b> <span class="dim">in 312ms</span></span>`;
+		await sleep(80);
+
+		// Phase 1c: install bars — staggered cascade.
+		const pkgLines = UV_PKGS.map((p) => {
+			const ln = document.createElement("div");
+			ln.className = "ln";
+			const pad = " ".repeat(Math.max(0, 14 - p.name.length));
+			ln.innerHTML =
+				`<span class="glyph muted">+</span>` +
+				`<span class="lbl">${p.name}${pad}<span class="ver">${p.ver}</span></span>` +
+				`<span class="bar empty">${bar(0)}</span>`;
+			stream.appendChild(ln);
+			return ln;
+		});
+		await Promise.all(
+			pkgLines.map(
+				(ln, idx) =>
+					new Promise<void>((res) => {
+						const start = performance.now() + idx * 60;
+						const dur = 380 + Math.random() * 220;
+						const barEl = ln.querySelector<HTMLElement>(".bar");
+						const glyph = ln.querySelector<HTMLElement>(".glyph");
+						if (!barEl || !glyph) {
+							res();
+							return;
+						}
+						const tick = () => {
+							const now = performance.now();
+							if (now < start) {
+								requestAnimationFrame(tick);
+								return;
+							}
+							const pct = Math.min(100, ((now - start) / dur) * 100);
+							barEl.textContent = bar(pct);
+							barEl.classList.remove("empty");
+							barEl.classList.toggle("partial", pct < 100);
+							if (pct >= 100) {
+								glyph.textContent = "✓";
+								glyph.classList.remove("muted");
+								glyph.classList.add("done");
+								res();
+							} else {
+								requestAnimationFrame(tick);
+							}
+						};
+						requestAnimationFrame(tick);
+					}),
+			),
+		);
+		await sleep(120);
+
+		// Phase 1d: summary.
+		const sumLine = document.createElement("div");
+		sumLine.className = "ln";
+		sumLine.innerHTML = `<span class="glyph done">✓</span><span class="lbl summary"><b>Installed 47 packages in 1.21s</b> <span class="dim">· 38 already cached</span></span>`;
+		stream.appendChild(sumLine);
+		await sleep(280);
+
+		sessionStorage.setItem("uvsync.done", "1");
+	}
+
+	runUvSync();
+	document.addEventListener("astro:page-load", runUvSync);
+</script>

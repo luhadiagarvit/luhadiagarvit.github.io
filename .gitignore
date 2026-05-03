@@ -23,3 +23,9 @@ pnpm-debug.log*
 *.pem
 .cache
 .astro
+
+# v3 — local-only assets (embeddings index, full-resolution photos, derived data)
+private/
+public/_index/
+public/_data/
+public/portrait/

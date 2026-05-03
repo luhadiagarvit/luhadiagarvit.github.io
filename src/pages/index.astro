@@ -1,6 +1,6 @@
 ---
 import { getCollection } from "astro:content";
-import BootStream from "@/components/home/BootStream.astro";
+import UvSync from "@/components/home/UvSync.astro";
 import PageLayout from "@/layouts/Base.astro";
 import { siteConfig } from "@/site.config";
 
@@ -52,7 +52,7 @@ const recentPosts = posts.slice(0, 3);
 <PageLayout meta={{ title: "Home", description: "Garvit Luhadia — data scientist." }}>
 	<script type="application/ld+json" is:inline set:html={JSON.stringify(personSchema)} />
 
-	<BootStream />
+	<UvSync />
 
 	<section class="hero">
 		<h1 class="hero__name">Garvit Luhadia.</h1>
