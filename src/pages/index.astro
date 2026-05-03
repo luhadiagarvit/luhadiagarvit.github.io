@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import BootStream from "@/components/home/BootStream.astro";
 import PageLayout from "@/layouts/Base.astro";
 import { siteConfig } from "@/site.config";
 
@@ -46,27 +47,17 @@ const posts = (
 	await getCollection("notes", ({ data }) => !data.draft && data.kind === "post")
 ).sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime());
 const recentPosts = posts.slice(0, 3);
-
-const socials = [
-	{ label: "GitHub", handle: "luhadiagarvit", href: "https://github.com/luhadiagarvit" },
-	{ label: "LinkedIn", handle: "in/luhadiagarvit", href: "https://www.linkedin.com/in/luhadiagarvit" },
-	{ label: "Scholar", handle: "Garvit Luhadia", href: "https://scholar.google.com/citations?user=wn8NmyQAAAAJ" },
-	{ label: "ORCID", handle: "0009-0004-1836-8951", href: "https://orcid.org/0009-0004-1836-8951" },
-	{ label: "Kaggle", handle: "luhadiagarvit", href: "https://www.kaggle.com/luhadiagarvit" },
-	{ label: "Contact", handle: "via form →", href: "/contact/" },
-];
-
-const terminalFull = `$ whoami\nGarvit Luhadia — Data Scientist, UN DPO\n$ cat bio.txt`;
 ---
 
 <PageLayout meta={{ title: "Home", description: "Garvit Luhadia — data scientist." }}>
 	<script type="application/ld+json" is:inline set:html={JSON.stringify(personSchema)} />
 
-	<section class="v1-hero">
-		<pre class="v1-hero__line" data-terminal data-full={terminalFull}>&nbsp;</pre>
-		<h1 class="v1-hero__name">Garvit Luhadia.</h1>
-		<p class="v1-hero__tag">Data scientist. NYU CDS <span class="text-muted">'25</span>.</p>
-		<div class="v1-hero__bio">
+	<BootStream />
+
+	<section class="hero">
+		<h1 class="hero__name">Garvit Luhadia.</h1>
+		<p class="hero__tag">Data scientist. NYU CDS <span class="text-muted">'25</span>.</p>
+		<div class="hero__bio">
 			<p>
 				Currently a data scientist at the
 				<a class="cactus-link" href="https://www.un.org/en/" rel="noreferrer" target="_blank">UN Department of Peace Operations</a>,
@@ -85,15 +76,15 @@ const terminalFull = `$ whoami\nGarvit Luhadia — Data Scientist, UN DPO\n$ cat
 		</div>
 	</section>
 
-	<section class="v1-section">
-		<div class="v1-section__head">
-			<div class="v1-section__title">now — {nowDate}</div>
-			<a class="v1-section__more" href="/now/">full page →</a>
+	<section class="section">
+		<div class="section__head">
+			<div class="section__title">now — {nowDate}</div>
+			<a class="section__more" href="/now/">full page →</a>
 		</div>
-		<ul class="v1-now-list">
+		<ul class="now-list">
 			{nowItems.map((it) => (
 				<li>
-					<span class="label">{it.label}</span>
+					<span class="lbl">{it.label}</span>
 					<span>{it.text}</span>
 				</li>
 			))}
@@ -101,30 +92,30 @@ const terminalFull = `$ whoami\nGarvit Luhadia — Data Scientist, UN DPO\n$ cat
 	</section>
 
 	{recentPosts.length > 0 && (
-		<section class="v1-section">
-			<div class="v1-section__head">
-				<div class="v1-section__title">writing</div>
-				<a class="v1-section__more" href="/posts/">all posts →</a>
+		<section class="section">
+			<div class="section__head">
+				<div class="section__title">writing</div>
+				<a class="section__more" href="/notes/">all notes →</a>
 			</div>
 			<div>
 				{recentPosts.map((p) => (
-					<a class="v1-post" href={`/notes/${p.id}/`}>
-						<div class="v1-post__top">
+					<a class="home-row" href={`/notes/${p.id}/`}>
+						<div class="home-row__meta">
 							<span>{new Date(p.data.publishDate).toISOString().slice(0, 10)}</span>
-							{p.data.tags.length > 0 && <span>{p.data.tags.slice(0, 2).join(" · ")}</span>}
+							{p.data.tags.length > 0 && <span> · {p.data.tags.slice(0, 2).join(" · ")}</span>}
+							<span> · {p.data.kind}</span>
 						</div>
-						<div class="v1-post__title">{p.data.title}</div>
-						{p.data.description && <div class="v1-post__excerpt">{p.data.description}</div>}
+						<div class="home-row__title">{p.data.title}</div>
 					</a>
 				))}
 			</div>
 		</section>
 	)}
 
-	<section class="v1-section">
-		<div class="v1-section__head">
-			<div class="v1-section__title">selected work</div>
-			<a class="v1-section__more" href="/publications/">all publications →</a>
+	<section class="section">
+		<div class="section__head">
+			<div class="section__title">selected work</div>
+			<a class="section__more" href="/publications/">all publications →</a>
 		</div>
 		<ul class="space-y-2 text-sm" role="list">
 			<li>
@@ -148,71 +139,4 @@ const terminalFull = `$ whoami\nGarvit Luhadia — Data Scientist, UN DPO\n$ cat
 			</li>
 		</ul>
 	</section>
-
-	<section class="v1-section">
-		<div class="v1-section__head">
-			<div class="v1-section__title">contact</div>
-		</div>
-		<div class="v1-contact">
-			{socials.map((s) => (
-				<a
-					href={s.href}
-					rel={s.href.startsWith("http") ? "noreferrer" : undefined}
-					target={s.href.startsWith("http") ? "_blank" : undefined}
-				>
-					<span class="lbl">{s.label}</span>
-					<span>{s.handle} →</span>
-				</a>
-			))}
-		</div>
-	</section>
 </PageLayout>
-
-<script>
-	function bootTerminal() {
-		const el = document.querySelector<HTMLPreElement>("pre[data-terminal]");
-		if (!el) return;
-		const full = el.dataset.full ?? "";
-		if (!full) return;
-		let i = 0;
-		let bailed = false;
-
-		const render = (n: number) => {
-			const slice = full.slice(0, n);
-			const lines = slice.split("\n");
-			const out = lines
-				.map((line, idx) => {
-					const isPrompt = idx === 0 || idx === 2;
-					if (isPrompt) {
-						return `<span class="v1-hero__prompt">${line || "\u00a0"}</span>`;
-					}
-					return `<span>${line || "\u00a0"}</span>`;
-				})
-				.join("\n");
-			el.innerHTML = out;
-		};
-		render(0);
-
-		const tick = window.setInterval(() => {
-			if (bailed) return;
-			i++;
-			render(i);
-			if (i >= full.length) {
-				window.clearInterval(tick);
-				window.removeEventListener("scroll", onScroll);
-			}
-		}, 22);
-
-		const onScroll = () => {
-			if (bailed) return;
-			bailed = true;
-			window.clearInterval(tick);
-			render(full.length);
-			window.removeEventListener("scroll", onScroll);
-		};
-		window.addEventListener("scroll", onScroll, { passive: true, once: true });
-	}
-
-	bootTerminal();
-	document.addEventListener("astro:page-load", bootTerminal);
-</script>

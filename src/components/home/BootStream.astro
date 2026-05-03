@@ -1,0 +1,217 @@
+---
+import { getCollection } from "astro:content";
+
+const notesAll = await getCollection("notes", ({ data }) => !data.draft);
+const photosAll = await getCollection("photos");
+const publicationsAll = await getCollection("publications");
+
+// route count: glob every page entrypoint at build time
+const routeModules = import.meta.glob("../../pages/**/*.{astro,md,mdx,ts}");
+const routeCount = Object.keys(routeModules).length;
+
+const bootData = {
+	steps: [
+		{ kind: "cmd", text: "$ ./start.sh" },
+		{ kind: "log", text: "site v2.4.0 · luhadiagarvit.me" },
+		{ kind: "log", text: "────────────────────────────────────" },
+		{ kind: "task", label: "pull latest commit", dur: 1100 },
+		{ kind: "task", label: "sync notes from obsidian", dur: 1300 },
+		{ kind: "task", label: "fetch /now bundle", dur: 1700 },
+		{ kind: "task", label: `render markdown · ${notesAll.length} entries`, dur: 1500 },
+		{ kind: "task", label: `build static pages · ${routeCount} routes`, dur: 1100 },
+		{ kind: "log", text: "────────────────────────────────────" },
+		{
+			kind: "sum",
+			text: `✓ ${routeCount} routes · ${notesAll.length} notes · ${photosAll.length} photos · ${publicationsAll.length} publications`,
+		},
+		{ kind: "sum", text: "✓ ready in 6.7s. say hi at luhadiagarvit@nyu.edu", className: "ok" },
+	],
+};
+---
+
+<section class="boot" data-boot={JSON.stringify(bootData)}>
+	<div class="boot__bar">
+		<span class="dot"></span><span class="dot"></span><span class="dot"></span>
+		<span class="title">~/site · zsh</span>
+	</div>
+	<div class="boot__stream" data-boot-stream></div>
+</section>
+
+<script>
+	type BootStep =
+		| { kind: "cmd"; text: string }
+		| { kind: "log"; text: string }
+		| { kind: "sum"; text: string; className?: string }
+		| { kind: "task"; label: string; dur: number };
+
+	const SPIN_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+	function escapeHtml(s: string): string {
+		return s
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#39;");
+	}
+
+	function appendCursor(stream: HTMLElement) {
+		const cur = document.createElement("div");
+		cur.className = "boot__line cmd";
+		cur.innerHTML = `<span class="prompt">$</span><span class="label boot__cursor"></span>`;
+		stream.appendChild(cur);
+	}
+
+	function renderFinalState(stream: HTMLElement, steps: BootStep[]) {
+		stream.innerHTML = "";
+		for (const step of steps) {
+			const line = document.createElement("div");
+			if (step.kind === "cmd") {
+				line.className = "boot__line cmd";
+				line.innerHTML = `<span class="prompt">$</span><span class="label">${escapeHtml(
+					step.text.replace(/^\$ /, ""),
+				)}</span>`;
+			} else if (step.kind === "log") {
+				line.className = "boot__line";
+				line.innerHTML = `<span class="step"></span><span class="label" style="color:var(--muted)">${escapeHtml(
+					step.text,
+				)}</span>`;
+			} else if (step.kind === "sum") {
+				line.className = "boot__line";
+				const cls = step.className ? ` ${step.className}` : "";
+				line.innerHTML = `<span class="step done${cls}">✓</span><span class="label" style="color:var(--ink)">${escapeHtml(
+					step.text.replace(/^✓ /, ""),
+				)}</span>`;
+			} else if (step.kind === "task") {
+				line.className = "boot__line";
+				const secs = (step.dur / 1000).toFixed(1);
+				line.innerHTML = `<span class="step done">✓</span><span class="label">${escapeHtml(
+					step.label,
+				)}</span><span class="boot__bar2"><i style="width:100%"></i></span><span class="stat ok">${secs}s</span>`;
+			}
+			stream.appendChild(line);
+		}
+		appendCursor(stream);
+	}
+
+	function initBoot() {
+		const section = document.querySelector<HTMLElement>("section.boot[data-boot]");
+		if (!section) return;
+		const stream = section.querySelector<HTMLElement>("[data-boot-stream]");
+		if (!stream) return;
+
+		let steps: BootStep[] = [];
+		try {
+			const parsed = JSON.parse(section.dataset.boot ?? "{}") as { steps?: BootStep[] };
+			steps = parsed.steps ?? [];
+		} catch {
+			steps = [];
+		}
+		if (steps.length === 0) return;
+
+		stream.innerHTML = "";
+
+		let bailed = false;
+		let activeRaf = 0;
+		let activeTimeout = 0;
+		let resolveCurrent: (() => void) | null = null;
+
+		const onScroll = () => {
+			if (bailed) return;
+			bailed = true;
+			if (activeRaf) cancelAnimationFrame(activeRaf);
+			if (activeTimeout) window.clearTimeout(activeTimeout);
+			if (resolveCurrent) resolveCurrent();
+			renderFinalState(stream, steps);
+			window.removeEventListener("scroll", onScroll);
+		};
+		window.addEventListener("scroll", onScroll, { passive: true, once: true });
+
+		const sleep = (ms: number) =>
+			new Promise<void>((res) => {
+				resolveCurrent = res;
+				activeTimeout = window.setTimeout(() => {
+					resolveCurrent = null;
+					res();
+				}, ms);
+			});
+
+		(async () => {
+			for (const step of steps) {
+				if (bailed) return;
+				if (step.kind === "cmd") {
+					const line = document.createElement("div");
+					line.className = "boot__line cmd";
+					line.innerHTML = `<span class="prompt">$</span><span class="label">${escapeHtml(
+						step.text.replace(/^\$ /, ""),
+					)}</span>`;
+					stream.appendChild(line);
+					await sleep(450);
+				} else if (step.kind === "log") {
+					const line = document.createElement("div");
+					line.className = "boot__line";
+					line.innerHTML = `<span class="step"></span><span class="label" style="color:var(--muted)">${escapeHtml(
+						step.text,
+					)}</span>`;
+					stream.appendChild(line);
+					await sleep(120);
+				} else if (step.kind === "sum") {
+					const line = document.createElement("div");
+					line.className = "boot__line";
+					const cls = step.className ? ` ${step.className}` : "";
+					line.innerHTML = `<span class="step done${cls}">✓</span><span class="label" style="color:var(--ink)">${escapeHtml(
+						step.text.replace(/^✓ /, ""),
+					)}</span>`;
+					stream.appendChild(line);
+					await sleep(160);
+				} else if (step.kind === "task") {
+					const line = document.createElement("div");
+					line.className = "boot__line";
+					line.innerHTML = `<span class="step boot__spin"></span><span class="label">${escapeHtml(
+						step.label,
+					)}</span><span class="boot__bar2"><i style="width:0%"></i></span><span class="stat">0%</span>`;
+					stream.appendChild(line);
+					const spinEl = line.querySelector<HTMLElement>(".boot__spin");
+					const bar = line.querySelector<HTMLElement>(".boot__bar2 i");
+					const stat = line.querySelector<HTMLElement>(".stat");
+					if (!spinEl || !bar || !stat) continue;
+					const t0 = performance.now();
+					let frame = 0;
+					await new Promise<void>((res) => {
+						resolveCurrent = res;
+						const tick = () => {
+							if (bailed) {
+								resolveCurrent = null;
+								res();
+								return;
+							}
+							const elapsed = performance.now() - t0;
+							const pct = Math.min(100, (elapsed / step.dur) * 100);
+							spinEl.textContent = SPIN_FRAMES[frame++ % SPIN_FRAMES.length] ?? "";
+							bar.style.width = pct + "%";
+							stat.textContent = pct.toFixed(0) + "%";
+							if (pct >= 100) {
+								spinEl.textContent = "✓";
+								spinEl.classList.add("done");
+								stat.textContent = (step.dur / 1000).toFixed(1) + "s";
+								stat.classList.add("ok");
+								resolveCurrent = null;
+								res();
+							} else {
+								activeRaf = requestAnimationFrame(tick);
+							}
+						};
+						activeRaf = requestAnimationFrame(tick);
+					});
+				}
+			}
+			if (!bailed) {
+				appendCursor(stream);
+				window.removeEventListener("scroll", onScroll);
+			}
+		})();
+	}
+
+	initBoot();
+	document.addEventListener("astro:page-load", initBoot);
+</script>
