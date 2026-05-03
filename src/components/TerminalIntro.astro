@@ -1,0 +1,89 @@
+<div class="contact-term" data-contact-term></div>
+
+<script>
+	type Seq = { type: "prompt" | "out"; text: string };
+
+	const SEQUENCE: Seq[] = [
+		{ type: "prompt", text: "$ whoami" },
+		{ type: "out", text: "Garvit Luhadia — Data Scientist, UN DPO" },
+		{ type: "prompt", text: "$ cat bio.txt" },
+		{ type: "out", text: "open to: research collabs · short consulting · coffee in NYC" },
+	];
+
+	function escapeHtml(s: string): string {
+		return s
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#39;");
+	}
+
+	function renderFinalState(el: HTMLElement) {
+		let html = "";
+		for (const s of SEQUENCE) {
+			html += `<span class="${s.type === "prompt" ? "prompt" : "out"}">${escapeHtml(s.text)}</span>\n`;
+		}
+		el.innerHTML = html + '<span class="cur"></span>';
+	}
+
+	function initContactTerm() {
+		const el = document.querySelector<HTMLElement>("[data-contact-term]");
+		if (!el) return;
+
+		el.innerHTML = '<span class="cur"></span>';
+
+		let bailed = false;
+		let activeTimeout = 0;
+		let resolveCurrent: (() => void) | null = null;
+
+		const onScroll = () => {
+			if (bailed) return;
+			bailed = true;
+			if (activeTimeout) window.clearTimeout(activeTimeout);
+			if (resolveCurrent) resolveCurrent();
+			renderFinalState(el);
+			window.removeEventListener("scroll", onScroll);
+		};
+		window.addEventListener("scroll", onScroll, { passive: true, once: true });
+
+		const sleep = (ms: number) =>
+			new Promise<void>((res) => {
+				if (bailed) {
+					res();
+					return;
+				}
+				resolveCurrent = res;
+				activeTimeout = window.setTimeout(() => {
+					resolveCurrent = null;
+					res();
+				}, ms);
+			});
+
+		(async () => {
+			let html = "";
+			for (const s of SEQUENCE) {
+				if (bailed) return;
+				const cls = s.type === "prompt" ? "prompt" : "out";
+				const perChar = s.type === "prompt" ? 38 : 14;
+				const safe = escapeHtml(s.text);
+				const full = `<span class="${cls}">${safe}</span>\n`;
+				for (let i = 1; i <= s.text.length; i++) {
+					if (bailed) return;
+					const partial = `<span class="${cls}">${escapeHtml(s.text.slice(0, i))}</span>`;
+					el.innerHTML = html + partial + '<span class="cur"></span>';
+					await sleep(perChar);
+				}
+				html += full;
+				el.innerHTML = html + '<span class="cur"></span>';
+				await sleep(280);
+			}
+			if (!bailed) {
+				window.removeEventListener("scroll", onScroll);
+			}
+		})();
+	}
+
+	initContactTerm();
+	document.addEventListener("astro:page-load", initContactTerm);
+</script>

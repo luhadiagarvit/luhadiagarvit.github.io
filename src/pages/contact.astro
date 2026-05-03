@@ -1,5 +1,6 @@
 ---
 import PageLayout from "@/layouts/Base.astro";
+import TerminalIntro from "@/components/TerminalIntro.astro";
 import { turnstileSiteKey } from "@/site.config";
 
 const meta = {
@@ -11,9 +12,7 @@ const meta = {
 <PageLayout meta={meta}>
 	<section class="max-w-prose">
 		<h1 class="title mb-6 text-2xl">Contact</h1>
-		<p class="text-muted mb-8 text-sm leading-relaxed">
-			Fill the form. I read every message and usually reply within a week.
-		</p>
+		<TerminalIntro />
 
 		<form action="/api/contact" method="POST" class="space-y-5 text-sm">
 			<div>
@@ -57,6 +56,9 @@ const meta = {
 			>
 				Send
 			</button>
+			<p class="text-muted mt-4 text-xs">
+				Or write directly: luhadiagarvit at nyu dot edu · <a class="cactus-link" href="/pgp.txt">PGP key</a>
+			</p>
 		</form>
 	</section>
 
