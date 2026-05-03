@@ -1,0 +1,28 @@
+---
+import data from "@/content/now/strava-week.json";
+---
+
+<section class="section">
+	<div class="section__head">
+		<div class="section__title">moving</div>
+		<a class="section__more" href="https://www.strava.com/" rel="noreferrer" target="_blank">strava →</a>
+	</div>
+	<div class="strava">
+		<div>
+			<div class="strava__head">
+				<span class="verb">{data.lastActivity.verb}</span>
+				<span>{data.lastActivity.summary}</span>
+				<span class="ago">{data.lastActivity.ago}</span>
+			</div>
+			<div class="strava__week">{data.weekTotal}</div>
+		</div>
+		<div class="strava__bars">
+			{
+				data.bars.map((h: number, i: number) => (
+					<span class={data.rest[i] ? "empty" : ""} style={`height:${h}%`} />
+				))
+			}
+		</div>
+	</div>
+	<p class="strava__legend">M T W T F S S — bars are km / day. Empty = rest day.</p>
+</section>

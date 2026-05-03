@@ -1,0 +1,56 @@
+---
+import data from "@/content/now/mood-30d.json";
+
+const empties = new Set<number>(data.empties);
+const cells = data.scores.map((score: number, i: number) => ({
+	score,
+	empty: empties.has(i),
+}));
+
+const moodWords = ["rough", "meh", "steady", "good", "great"];
+function moodWord(score: number): string {
+	return moodWords[Math.max(0, Math.min(4, score - 1))] ?? "";
+}
+
+const todayDate = new Date(`${data.today}T00:00:00Z`);
+function dateLabel(i: number): string {
+	const d = new Date(todayDate.getTime());
+	d.setUTCDate(d.getUTCDate() - (29 - i));
+	const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+	const dd = String(d.getUTCDate()).padStart(2, "0");
+	return `${mm}-${dd}`;
+}
+---
+
+<section class="section">
+	<div class="section__head">
+		<div class="section__title">today, looking back</div>
+		<span class="section__meta">last 30 nights</span>
+	</div>
+	<p class="section__lede">One tap on my phone every night. Day rating + the four habits I'm trying to keep.</p>
+	<div class="mood__grid">
+		{
+			cells.map((c, i) => (
+				<div class={`mood__cell ${c.empty ? "empty" : "s" + c.score}`}>
+					<span class="tt">
+						{dateLabel(i)} · {c.empty ? "no check-in" : moodWord(c.score)}
+					</span>
+				</div>
+			))
+		}
+	</div>
+	<div class="mood__legend">
+		less <span class="swatch s1"></span><span class="swatch s2"></span><span class="swatch s3"></span><span
+			class="swatch s4"></span><span class="swatch s5"></span> more
+	</div>
+	<div class="mood__habits">
+		{
+			data.habits.map((h) => (
+				<span class="mood__habit">
+					<span class="dot is-on" />
+					{h.name} <span class="pct">{h.done}/{h.total}</span>
+				</span>
+			))
+		}
+	</div>
+</section>

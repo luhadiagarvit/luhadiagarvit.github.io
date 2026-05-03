@@ -1,0 +1,19 @@
+---
+import data from "@/content/now/listening.json";
+---
+
+<section class="section">
+	<div class="section__head">
+		<div class="section__title">listening</div>
+		<span class="section__meta">{data.platform}</span>
+	</div>
+	<div class="listening">
+		<div class="listening__art"></div>
+		<div>
+			<div class="listening__state"><span class="pulse"></span>{data.state}</div>
+			<div class="listening__title">{data.title}</div>
+			<div class="listening__artist">{data.artist}</div>
+		</div>
+		<div class="listening__platform">{data.platform}</div>
+	</div>
+</section>

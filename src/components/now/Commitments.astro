@@ -1,0 +1,91 @@
+---
+import { getCollection } from "astro:content";
+
+type CommitmentState = "doing" | "done" | "missed";
+
+const all = await getCollection("commitments");
+
+const sorted = [...all].sort((a, b) =>
+	a.data.week === b.data.week
+		? a.data.order - b.data.order
+		: b.data.week.localeCompare(a.data.week),
+);
+
+const grouped = new Map<string, typeof sorted>();
+for (const entry of sorted) {
+	const key = entry.data.week;
+	const list = grouped.get(key) ?? [];
+	list.push(entry);
+	grouped.set(key, list);
+}
+
+const weeks = [...grouped.keys()].sort((a, b) => b.localeCompare(a));
+const currentWeek = weeks[0];
+const lastWeek = weeks[1];
+
+const currentEntries = currentWeek ? (grouped.get(currentWeek) ?? []) : [];
+const lastWeekEntries = lastWeek ? (grouped.get(lastWeek) ?? []) : [];
+
+const currentTotal = currentEntries.length;
+const lastTotal = lastWeekEntries.length;
+const lastDone = lastWeekEntries.filter((e) => e.data.state === "done").length;
+
+function weekLabel(week: string | undefined): string {
+	if (!week) return "";
+	const match = week.match(/^(\d{4})-W(\d{2})$/);
+	if (!match) return week;
+	const [, year, num] = match;
+	return `${Number(num)} of ${year}`;
+}
+
+function stateLabel(state: CommitmentState): string {
+	if (state === "doing") return "in progress";
+	if (state === "done") return "done";
+	return "missed";
+}
+
+const currentWeekLabel = weekLabel(currentWeek);
+const lastWeekLabel = lastWeek ?? "";
+---
+
+<section class="section">
+	<div class="section__head">
+		<div class="section__title">commitments — week {currentWeekLabel}</div>
+		<span class="section__meta">{currentTotal} / 3 max</span>
+	</div>
+	<p class="section__lede">Public ledger. Misses don't get deleted, they get crossed out.</p>
+	<div>
+		{
+			currentEntries.map((e) => (
+				<div class={`ledger__row is-${e.data.state}`}>
+					<span class="ledger__week">{e.data.week}</span>
+					<span class={`ledger__box is-${e.data.state}`}>{e.data.state === "done" ? "✓" : ""}</span>
+					<span class="ledger__text">{e.data.text}</span>
+					<span class="ledger__state">{stateLabel(e.data.state as CommitmentState)}</span>
+				</div>
+			))
+		}
+	</div>
+	{
+		lastWeekEntries.length > 0 && (
+			<div class="commits-week">
+				<div class="commits-week__head">
+					<span>{lastWeekLabel} — last week</span>
+					<span class="score">
+						{lastDone} / {lastTotal} done
+					</span>
+				</div>
+				<div>
+					{lastWeekEntries.map((e) => (
+						<div class={`ledger__row is-${e.data.state}`}>
+							<span class="ledger__week">{e.data.week.replace(/^\d{4}-/, "")}</span>
+							<span class={`ledger__box is-${e.data.state}`}>{e.data.state === "done" ? "✓" : ""}</span>
+							<span class="ledger__text">{e.data.text}</span>
+							<span class="ledger__state">{stateLabel(e.data.state as CommitmentState)}</span>
+						</div>
+					))}
+				</div>
+			</div>
+		)
+	}
+</section>

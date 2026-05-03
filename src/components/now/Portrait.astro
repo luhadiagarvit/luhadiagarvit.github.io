@@ -1,0 +1,55 @@
+---
+import { readFileSync } from "node:fs";
+import streak from "@/content/now/streak.json";
+
+const streakValue = streak.streak;
+
+let level: 1 | 2 | 3 | 4 | 5;
+if (streakValue >= 14) level = 5;
+else if (streakValue >= 7) level = 4;
+else if (streakValue >= 3) level = 3;
+else if (streakValue >= 1) level = 2;
+else level = 1;
+
+const art = readFileSync(
+	new URL(`../../../public/portrait/L${level}.txt`, import.meta.url),
+	"utf8",
+);
+
+const stateTextByLevel: Record<1 | 2 | 3 | 4 | 5, string> = {
+	5: "level 5 of 5 · crisp",
+	4: "level 4 of 5 · sharp · one missed night this month",
+	3: "level 3 of 5 · soft · two skips, three days ago",
+	2: "level 2 of 5 · faded · come back",
+	1: "level 1 of 5 · gone",
+};
+
+const stateText = stateTextByLevel[level];
+---
+
+<section class="section">
+	<div class="section__head">
+		<div class="section__title">self-portrait — fades when I skip</div>
+		<span class="section__meta">streak: <b>{streakValue}</b> nights</span>
+	</div>
+	<p class="section__lede">
+		A photo of me, redrawn in characters. Each missed check-in drops the rendering one density step.
+	</p>
+	<div class="portrait">
+		<pre class="portrait__art">{art}</pre>
+		<div class="portrait__copy">
+			<h4>// resolution</h4>
+			<p>{stateText}</p>
+			<div class="portrait__density">
+				<div class="row">
+					<span class="lbl">density</span>
+					{[1, 2, 3, 4, 5].map((s) => <span class={`step ${s <= level ? "is-on" : ""}`} />)}
+				</div>
+			</div>
+			<div class="portrait__streak">
+				<span class={`num ${streakValue <= 1 ? "faded" : ""}`}>{streakValue}</span>
+				<span class="lbl">consecutive nights<br />checked in</span>
+			</div>
+		</div>
+	</div>
+</section>
