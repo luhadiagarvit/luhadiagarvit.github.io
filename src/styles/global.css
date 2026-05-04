@@ -851,8 +851,24 @@
 .graph-legend .dot-evergreen { background: var(--color-accent-2); }
 .graph-empty { color: var(--color-muted); font-size: 13px; padding: 20px; border: 1px dashed var(--color-rule); border-radius: 4px; max-width: 60ch; }
 
-/* /stubs route — filled in v3 step 6 */
-.stubs-list { /* placeholder */ }
+/* v3 step 6 — /stubs page list. */
+.stubs-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.stubs-row {
+	display: grid;
+	grid-template-columns: 1fr auto auto;
+	gap: 12px;
+	align-items: baseline;
+	font-size: 13px;
+	padding: 6px 0;
+	border-bottom: 1px dashed var(--color-rule);
+}
+.stubs-row:last-child { border-bottom: none; }
+.stubs-row .stubs-link { color: var(--color-muted); font-family: inherit; }
+.stubs-row .stubs-meta { color: var(--color-muted); font-size: 11.5px; letter-spacing: 0.04em; }
+.stubs-row .stubs-cta { font-size: 12px; }
+@media (max-width: 640px) {
+	.stubs-row { grid-template-columns: 1fr; gap: 4px; }
+}
 
 /* now-page last-updated stamp — filled in v3 step 10 */
 .now-stamp { /* placeholder */ }

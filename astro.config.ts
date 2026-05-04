@@ -13,30 +13,35 @@ import rehypeUnwrapImages from "rehype-unwrap-images";
 import { expressiveCodeOptions, siteConfig } from "./src/site.config";
 import { wikilinkRemark } from "./src/utils/wikilinkRemark";
 
-// v3 step 3 + step 5 — regenerate build-time indexes after each
-// production build:
-//   - public/_index/notes.json — embeddings index for /UvSync ask
+// v3 step 3 + step 5 + step 6 — regenerate build-time indexes around
+// each production build:
 //   - public/_data/graph.json  — wikilink node/edge graph for /graph
+//     and /stubs. Emitted on `astro:build:start` so /stubs.astro can
+//     read it via fs in its frontmatter before pages render.
+//   - public/_index/notes.json — embeddings index for /UvSync ask.
+//     Emitted on `astro:build:done` because it's a runtime fetch only.
 // Each script wrapped in try/catch so a failed model download
 // (offline CI) or graph emit doesn't break the build. Both consumers
 // have empty-state fallbacks.
 const buildIndexes = {
 	name: "v3-build-indexes",
 	hooks: {
+		"astro:build:start": () => {
+			try {
+				execSync("node scripts/build-graph.mjs", { stdio: "inherit" });
+			} catch (e) {
+				console.warn(
+					"[graph] build hook skipped:",
+					e instanceof Error ? e.message : String(e),
+				);
+			}
+		},
 		"astro:build:done": () => {
 			try {
 				execSync("node scripts/build-embeddings.mjs", { stdio: "inherit" });
 			} catch (e) {
 				console.warn(
 					"[embeddings] build hook skipped:",
-					e instanceof Error ? e.message : String(e),
-				);
-			}
-			try {
-				execSync("node scripts/build-graph.mjs", { stdio: "inherit" });
-			} catch (e) {
-				console.warn(
-					"[graph] build hook skipped:",
 					e instanceof Error ? e.message : String(e),
 				);
 			}
