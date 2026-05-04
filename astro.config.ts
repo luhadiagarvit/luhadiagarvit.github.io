@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import { rehypeHeadingIds } from "@astrojs/markdown-remark";
 import mdx from "@astrojs/mdx";
@@ -12,6 +13,25 @@ import rehypeUnwrapImages from "rehype-unwrap-images";
 import { expressiveCodeOptions, siteConfig } from "./src/site.config";
 import { wikilinkRemark } from "./src/utils/wikilinkRemark";
 
+// v3 step 3 — regenerate the home /UvSync embeddings index after each
+// build. Wrapped in try/catch so a failed model download (offline CI)
+// does not fail the build; the browser falls back to keyword search.
+const buildEmbeddings = {
+	name: "v3-build-embeddings",
+	hooks: {
+		"astro:build:done": () => {
+			try {
+				execSync("node scripts/build-embeddings.mjs", { stdio: "inherit" });
+			} catch (e) {
+				console.warn(
+					"[embeddings] build hook skipped:",
+					e instanceof Error ? e.message : String(e),
+				);
+			}
+		},
+	},
+};
+
 export default defineConfig({
 	site: siteConfig.url,
 	integrations: [
@@ -19,6 +39,7 @@ export default defineConfig({
 		icon(),
 		sitemap(),
 		mdx(),
+		buildEmbeddings,
 	],
 	markdown: {
 		remarkPlugins: [wikilinkRemark],

@@ -712,6 +712,58 @@
 [data-theme="dark"] .uvsync .summary { color: oklch(72% 0.12 145); }
 [data-theme="dark"] .uvsync .ln .bar { color: oklch(72% 0.12 145); }
 
+/* uvsync — ask phase (v3 step 3). Phase 2 lands once the install transcript
+ * resolves: input row + suggestion chips + result rows. Reuses the install
+ * tokens; the only NEW colors are the two `mark` swatches per spec lines
+ * 139–140 (light + dark), which highlight matched query tokens in the
+ * excerpt and aren't expressible with the existing oklch palette. */
+.uvsync .ask { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; }
+.uvsync .ask .prompt { color: var(--color-accent); }
+.uvsync__input {
+	font-family: inherit;
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--color-global-text);
+	background: var(--color-global-bg);
+	border: none;
+	outline: none;
+	flex: 1;
+	min-width: 0;
+	padding: 0;
+	caret-color: var(--color-accent);
+}
+.uvsync__input::placeholder { color: var(--color-muted); font-style: normal; }
+.uvsync .chips { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 0 0 24px; margin-top: 2px; }
+.uvsync .chips button {
+	font-family: inherit;
+	font-size: 11.5px;
+	color: var(--color-muted);
+	background: transparent;
+	border: 1px dashed var(--color-rule);
+	border-radius: 999px;
+	padding: 3px 9px;
+	cursor: pointer;
+	transition: 140ms;
+}
+.uvsync .chips button:hover { color: var(--color-accent-2); border-color: var(--color-accent); border-style: solid; }
+.uvsync__results { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+.uvsync .answer { padding: 4px 0 4px 24px; color: var(--color-global-text); font-size: 13px; line-height: 1.6; max-width: 68ch; }
+.uvsync .answer .meta { color: var(--color-muted); font-size: 11.5px; margin-bottom: 3px; letter-spacing: 0.04em; }
+.uvsync .answer .meta .score { color: var(--color-accent); }
+.uvsync .answer .excerpt { color: var(--color-global-text); }
+/* mark colors — NEW per spec lines 139–140; the only new color literals
+ * allowed in v3 step 3. Light bg is a warm pale yellow, dark bg a deeper
+ * desaturated yellow so the highlight reads in both themes. */
+.uvsync .answer .excerpt mark { background: oklch(92% 0.06 90); color: var(--color-accent-2); padding: 0 2px; border-radius: 1px; }
+[data-theme="dark"] .uvsync .answer .excerpt mark { background: oklch(35% 0.06 90); color: var(--color-accent-2); }
+.uvsync .answer .link { color: var(--color-link); text-decoration: underline; text-decoration-color: var(--color-rule); }
+.uvsync .resolving { color: var(--color-muted); font-size: 12.5px; padding: 2px 0 2px 24px; display: flex; gap: 8px; align-items: baseline; }
+.uvsync .resolving .glyph { color: var(--color-accent); }
+
+@media (prefers-reduced-motion: reduce) {
+	.uvsync .cur::after { animation: none; }
+}
+
 /* alltrails — filled in v3 step 8 */
 .alltrails { /* placeholder */ }
 

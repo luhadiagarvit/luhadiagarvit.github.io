@@ -15,25 +15,125 @@
 	const SPIN_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 	const BAR_WIDTH = 16;
 
+	// Spec lines 992-999. Cycle on empty result; one quirk shown at a time.
+	const ASK_QUIRKS = [
+		"no match in the index. try a noun?",
+		"the embedding shrugs.",
+		"404 — not in this brain.",
+		"hm. nothing close. try 'work', 'hiking', or 'reading'?",
+		"segmentation fault (just kidding — index returned nothing)",
+		"0.000 cosine similarity. that's a first.",
+	];
+
+	// Suggestion chips — picked per the v3 plan handoff.
+	const ASK_SUGGESTIONS = ["embeddings", "streak", "recent hikes"];
+
+	// Spinner words during model load — per v3 plan handoff guidance.
+	const ASK_SPINNER_WORDS = ["thinking…", "moseying…", "brainstorming…", "claudeing…"];
+
+	type IndexItem = {
+		slug: string;
+		title: string;
+		kind: string;
+		excerpt: string;
+		embedding: number[];
+	};
+	type NotesIndex = { model: string; generated: string; items: IndexItem[] };
+
 	function bar(pct: number): string {
 		const filled = Math.round((pct / 100) * BAR_WIDTH);
 		return "█".repeat(filled) + "░".repeat(BAR_WIDTH - filled);
 	}
 
-	function sleep(ms: number): Promise<void> {
-		return new Promise((res) => window.setTimeout(res, ms));
+	function escapeHtml(s: string): string {
+		return s
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#39;");
 	}
 
-	async function typeInto(el: Element, text: string, speed = 38): Promise<void> {
+	type RunHandles = {
+		bailed: boolean;
+		rafs: Set<number>;
+		timeouts: Set<number>;
+		pendingResolve: (() => void) | null;
+		askToken: number;
+		askInterval: number | null;
+	};
+
+	// Module-scoped handles for the install animation, so a re-mount via
+	// astro:page-load can cancel any in-flight rAF / timeout chain that
+	// the previous mount left running.
+	let handles: RunHandles | null = null;
+
+	function newHandles(): RunHandles {
+		return {
+			bailed: false,
+			rafs: new Set(),
+			timeouts: new Set(),
+			pendingResolve: null,
+			askToken: 0,
+			askInterval: null,
+		};
+	}
+
+	function cancelAll(h: RunHandles): void {
+		h.bailed = true;
+		for (const id of h.rafs) cancelAnimationFrame(id);
+		h.rafs.clear();
+		for (const id of h.timeouts) window.clearTimeout(id);
+		h.timeouts.clear();
+		if (h.askInterval !== null) {
+			window.clearInterval(h.askInterval);
+			h.askInterval = null;
+		}
+		if (h.pendingResolve) {
+			const r = h.pendingResolve;
+			h.pendingResolve = null;
+			r();
+		}
+		h.askToken++;
+	}
+
+	function trackedSleep(h: RunHandles, ms: number): Promise<void> {
+		return new Promise((res) => {
+			if (h.bailed) {
+				res();
+				return;
+			}
+			h.pendingResolve = res;
+			const id = window.setTimeout(() => {
+				h.timeouts.delete(id);
+				h.pendingResolve = null;
+				res();
+			}, ms);
+			h.timeouts.add(id);
+		});
+	}
+
+	function trackedRaf(h: RunHandles, cb: FrameRequestCallback): number {
+		if (h.bailed) return 0;
+		const id = requestAnimationFrame((t) => {
+			h.rafs.delete(id);
+			cb(t);
+		});
+		h.rafs.add(id);
+		return id;
+	}
+
+	async function typeInto(h: RunHandles, el: Element, text: string, speed = 38): Promise<void> {
 		for (let i = 1; i <= text.length; i++) {
+			if (h.bailed) return;
 			el.textContent = text.slice(0, i);
-			await sleep(speed);
+			await trackedSleep(h, speed);
 		}
 	}
 
 	type Phase = { text: string; dur: number };
 
-	function spinCycle(el: HTMLElement, phases: Phase[]): Promise<void> {
+	function spinCycle(h: RunHandles, el: HTMLElement, phases: Phase[]): Promise<void> {
 		const glyph = el.querySelector<HTMLElement>(".glyph");
 		const lbl = el.querySelector<HTMLElement>(".lbl");
 		if (!glyph || !lbl) return Promise.resolve();
@@ -42,7 +142,13 @@
 		const t0 = performance.now();
 		lbl.textContent = phases[0]?.text ?? "";
 		return new Promise((res) => {
+			h.pendingResolve = res;
 			const tick = () => {
+				if (h.bailed) {
+					h.pendingResolve = null;
+					res();
+					return;
+				}
 				const elapsed = performance.now() - t0;
 				let cumulative = 0;
 				let nextPhase = 0;
@@ -55,6 +161,7 @@
 					nextPhase = i + 1;
 				}
 				if (nextPhase >= phases.length) {
+					h.pendingResolve = null;
 					res();
 					return;
 				}
@@ -63,9 +170,9 @@
 					lbl.textContent = phases[phaseIdx]!.text;
 				}
 				glyph.textContent = SPIN_FRAMES[frame++ % SPIN_FRAMES.length] ?? "";
-				requestAnimationFrame(tick);
+				trackedRaf(h, tick);
 			};
-			requestAnimationFrame(tick);
+			trackedRaf(h, tick);
 		});
 	}
 
@@ -99,16 +206,342 @@
 		stream.appendChild(sumLine);
 	}
 
+	// Phase 2 — ask UI. Mounts the input + chips + results pane below
+	// the install transcript. handleAsk attaches to form + chip clicks.
+	function mountAskUI(h: RunHandles, stream: HTMLElement, autoFocus: boolean): void {
+		const ask = document.createElement("form");
+		ask.className = "ask";
+		ask.setAttribute("data-uvsync-ask", "");
+		ask.innerHTML =
+			`<span class="prompt">$</span>` +
+			`<input type="text" class="uvsync__input" data-uvsync-input ` +
+			`placeholder='ask the site anything…' autocomplete="off" spellcheck="false" />`;
+		stream.appendChild(ask);
+
+		const chips = document.createElement("div");
+		chips.className = "chips";
+		for (const q of ASK_SUGGESTIONS) {
+			const b = document.createElement("button");
+			b.type = "button";
+			b.textContent = q;
+			b.dataset.q = q;
+			chips.appendChild(b);
+		}
+		stream.appendChild(chips);
+
+		const results = document.createElement("div");
+		results.className = "uvsync__results";
+		results.setAttribute("data-uvsync-results", "");
+		results.setAttribute("aria-live", "polite");
+		stream.appendChild(results);
+
+		const input = ask.querySelector<HTMLInputElement>(".uvsync__input");
+		if (!input) return;
+
+		ask.addEventListener("submit", (e) => {
+			e.preventDefault();
+			const q = input.value.trim();
+			if (!q) return;
+			void handleAsk(h, stream, q);
+		});
+
+		chips.querySelectorAll<HTMLButtonElement>("button").forEach((btn) => {
+			btn.addEventListener("click", () => {
+				const q = btn.dataset.q ?? "";
+				input.value = q;
+				input.focus({ preventScroll: true });
+				void handleAsk(h, stream, q);
+			});
+		});
+
+		if (autoFocus) {
+			const id = window.setTimeout(() => {
+				h.timeouts.delete(id);
+				if (!h.bailed) input.focus({ preventScroll: true });
+			}, 220);
+			h.timeouts.add(id);
+		}
+	}
+
+	function cosineSimilarity(a: number[], b: number[]): number {
+		if (a.length !== b.length || a.length === 0) return 0;
+		let dot = 0;
+		let na = 0;
+		let nb = 0;
+		for (let i = 0; i < a.length; i++) {
+			dot += a[i]! * b[i]!;
+			na += a[i]! * a[i]!;
+			nb += b[i]! * b[i]!;
+		}
+		const denom = Math.sqrt(na) * Math.sqrt(nb);
+		return denom === 0 ? 0 : dot / denom;
+	}
+
+	function tokenize(q: string): string[] {
+		return q
+			.toLowerCase()
+			.split(/[^a-z0-9]+/)
+			.filter((t) => t.length >= 2);
+	}
+
+	function highlightExcerpt(excerpt: string, tokens: string[]): string {
+		let html = escapeHtml(excerpt);
+		for (const t of tokens) {
+			if (!t) continue;
+			const re = new RegExp(`(${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+			html = html.replace(re, "<mark>$1</mark>");
+		}
+		return html;
+	}
+
+	let cachedIndex: NotesIndex | null | undefined;
+	async function loadIndex(): Promise<NotesIndex | null> {
+		if (cachedIndex !== undefined) return cachedIndex;
+		try {
+			const r = await fetch("/_index/notes.json", { cache: "force-cache" });
+			if (!r.ok) {
+				cachedIndex = null;
+				return null;
+			}
+			cachedIndex = (await r.json()) as NotesIndex;
+			return cachedIndex;
+		} catch {
+			cachedIndex = null;
+			return null;
+		}
+	}
+
+	type ExtractorFn = (text: string, opts: { pooling: string; normalize: boolean }) => Promise<{
+		data: ArrayLike<number>;
+	}>;
+	let cachedExtractor: ExtractorFn | null | undefined;
+	async function getExtractor(): Promise<ExtractorFn | null> {
+		if (cachedExtractor !== undefined) return cachedExtractor;
+		try {
+			const mod = await import("@xenova/transformers");
+			cachedExtractor = (await mod.pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2", {
+				quantized: true,
+			})) as unknown as ExtractorFn;
+			return cachedExtractor;
+		} catch {
+			cachedExtractor = null;
+			return null;
+		}
+	}
+
+	function keywordScore(query: string, item: IndexItem): number {
+		const tokens = tokenize(query);
+		if (tokens.length === 0) return 0;
+		const hay = (item.title + " " + item.excerpt).toLowerCase();
+		let score = 0;
+		for (const t of tokens) {
+			const re = new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+			const matches = hay.match(re);
+			if (matches) score += matches.length * (t.length >= 5 ? 2 : 1);
+		}
+		return score;
+	}
+
+	function renderEmptyResults(
+		h: RunHandles,
+		results: HTMLElement,
+		motionOk: boolean,
+	): void {
+		results.innerHTML = "";
+		const empty = document.createElement("div");
+		empty.className = "answer";
+		empty.innerHTML =
+			`<div class="meta">// no result</div>` +
+			`<div class="excerpt" data-quirk style="color:var(--color-muted)"></div>`;
+		results.appendChild(empty);
+		const quirkEl = empty.querySelector<HTMLElement>("[data-quirk]");
+		if (!quirkEl) return;
+		let i = Math.floor(Math.random() * ASK_QUIRKS.length);
+		quirkEl.textContent = ASK_QUIRKS[i] ?? "";
+		if (!motionOk) return;
+		// Cycle three more quirks at 1.5s.
+		let cycles = 0;
+		if (h.askInterval !== null) window.clearInterval(h.askInterval);
+		h.askInterval = window.setInterval(() => {
+			if (h.bailed || cycles >= 3) {
+				if (h.askInterval !== null) {
+					window.clearInterval(h.askInterval);
+					h.askInterval = null;
+				}
+				return;
+			}
+			i = (i + 1) % ASK_QUIRKS.length;
+			quirkEl.textContent = ASK_QUIRKS[i] ?? "";
+			cycles++;
+		}, 1500);
+	}
+
+	function renderResults(
+		results: HTMLElement,
+		hits: Array<{ item: IndexItem; score: number; cosine?: number }>,
+		query: string,
+	): void {
+		results.innerHTML = "";
+		const tokens = tokenize(query);
+		for (const { item, score, cosine } of hits) {
+			const ans = document.createElement("div");
+			ans.className = "answer";
+			const meta =
+				cosine !== undefined
+					? `<span class="score">${cosine.toFixed(3)}</span>`
+					: `<span class="score">${(0.5 + Math.min(0.4, score * 0.05)).toFixed(3)}</span>`;
+			const href = `/notes/${item.slug}/`;
+			ans.innerHTML =
+				`<div class="meta">${meta} · ${escapeHtml(item.kind)} · ` +
+				`<a class="link" href="${href}">${href}</a></div>` +
+				`<div class="excerpt"><b style="color:var(--color-accent-2)">${escapeHtml(
+					item.title,
+				)}</b> — ${highlightExcerpt(item.excerpt, tokens)}</div>`;
+			results.appendChild(ans);
+		}
+	}
+
+	async function handleAsk(h: RunHandles, stream: HTMLElement, query: string): Promise<void> {
+		const results = stream.querySelector<HTMLElement>("[data-uvsync-results]");
+		if (!results || !query) return;
+
+		const motionOk = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+		// Cancel any prior in-flight ask cycle.
+		if (h.askInterval !== null) {
+			window.clearInterval(h.askInterval);
+			h.askInterval = null;
+		}
+		const myToken = ++h.askToken;
+
+		// Spinner row with cycling words while the model loads.
+		results.innerHTML = "";
+		const resolving = document.createElement("div");
+		resolving.className = "resolving";
+		resolving.innerHTML =
+			`<span class="glyph">${SPIN_FRAMES[0]}</span>` +
+			`<span data-spin-word>${ASK_SPINNER_WORDS[0]}</span>`;
+		results.appendChild(resolving);
+		const glyphEl = resolving.querySelector<HTMLElement>(".glyph");
+		const wordEl = resolving.querySelector<HTMLElement>("[data-spin-word]");
+		let frame = 0;
+		let wordIdx = 0;
+		let spinTimer: number | null = null;
+		let spinFrameTimer: number | null = null;
+		if (motionOk) {
+			spinFrameTimer = window.setInterval(() => {
+				if (h.askToken !== myToken || h.bailed) {
+					if (spinFrameTimer !== null) window.clearInterval(spinFrameTimer);
+					return;
+				}
+				if (glyphEl) glyphEl.textContent = SPIN_FRAMES[frame++ % SPIN_FRAMES.length] ?? "";
+			}, 90);
+			spinTimer = window.setInterval(() => {
+				if (h.askToken !== myToken || h.bailed) {
+					if (spinTimer !== null) window.clearInterval(spinTimer);
+					return;
+				}
+				wordIdx = (wordIdx + 1) % ASK_SPINNER_WORDS.length;
+				if (wordEl) wordEl.textContent = ASK_SPINNER_WORDS[wordIdx] ?? "";
+			}, 320);
+		}
+
+		const stopSpinner = () => {
+			if (spinTimer !== null) window.clearInterval(spinTimer);
+			if (spinFrameTimer !== null) window.clearInterval(spinFrameTimer);
+		};
+
+		// Try the embedding path. Fall back to keyword if either side fails.
+		let hits: Array<{ item: IndexItem; score: number; cosine?: number }> = [];
+		const index = await loadIndex();
+		if (h.askToken !== myToken) {
+			stopSpinner();
+			return;
+		}
+
+		if (!index || index.items.length === 0) {
+			stopSpinner();
+			renderEmptyResults(h, results, motionOk);
+			return;
+		}
+
+		const haveVectors = index.items.some((it) => it.embedding && it.embedding.length > 0);
+		let usedEmbeddings = false;
+		if (haveVectors) {
+			const extractor = await getExtractor();
+			if (h.askToken !== myToken) {
+				stopSpinner();
+				return;
+			}
+			if (extractor) {
+				try {
+					const out = await extractor(query, { pooling: "mean", normalize: true });
+					if (h.askToken !== myToken) {
+						stopSpinner();
+						return;
+					}
+					const qvec = Array.from(out.data) as number[];
+					hits = index.items
+						.filter((it) => it.embedding && it.embedding.length === qvec.length)
+						.map((it) => ({
+							item: it,
+							score: 0,
+							cosine: cosineSimilarity(qvec, it.embedding),
+						}))
+						.sort((a, b) => (b.cosine ?? 0) - (a.cosine ?? 0))
+						.slice(0, 2);
+					usedEmbeddings = true;
+				} catch {
+					usedEmbeddings = false;
+				}
+			}
+		}
+
+		if (!usedEmbeddings) {
+			hits = index.items
+				.map((it) => ({ item: it, score: keywordScore(query, it) }))
+				.filter((s) => s.score > 0)
+				.sort((a, b) => b.score - a.score)
+				.slice(0, 2);
+		}
+
+		stopSpinner();
+
+		if (hits.length === 0) {
+			renderEmptyResults(h, results, motionOk);
+			return;
+		}
+
+		renderResults(results, hits, query);
+	}
+
 	async function runUvSync(): Promise<void> {
 		const root = document.querySelector<HTMLElement>("[data-uvsync]");
 		if (!root) return;
 		const stream = root.querySelector<HTMLElement>("[data-uv-stream]");
 		if (!stream) return;
 
+		// Cancel anything from a prior mount before spawning new rAF chains.
+		if (handles) cancelAll(handles);
+		handles = newHandles();
+		const h = handles;
+
+		// Reduced-motion early gate — short-circuit the install animation
+		// AND skip the spinner cycling. We still mount the ask UI so the
+		// page is functional.
+		const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+		if (reduced) {
+			renderFinalState(stream);
+			mountAskUI(h, stream, false);
+			sessionStorage.setItem("uvsync.done", "1");
+			return;
+		}
+
 		// Skip the install on revisit — render the final state immediately.
 		const skip = sessionStorage.getItem("uvsync.done") === "1";
 		if (skip) {
 			renderFinalState(stream);
+			mountAskUI(h, stream, false);
 			return;
 		}
 
@@ -120,22 +553,26 @@
 		cmdLine.innerHTML = `<span class="prompt">$</span><span class="lbl"></span><span class="cur"></span>`;
 		stream.appendChild(cmdLine);
 		const cmdLbl = cmdLine.querySelector<HTMLElement>(".lbl");
-		if (cmdLbl) await typeInto(cmdLbl, "uv sync", 50);
+		if (cmdLbl) await typeInto(h, cmdLbl, "uv sync", 50);
+		if (h.bailed) return;
 		cmdLine.querySelector(".cur")?.remove();
-		await sleep(180);
+		await trackedSleep(h, 180);
+		if (h.bailed) return;
 
 		// Phase 1b: ephemeral one-line cycle — Resolving → Downloading → Linking.
 		const cycle = document.createElement("div");
 		cycle.className = "ln";
 		cycle.innerHTML = `<span class="glyph">⠋</span><span class="lbl">Resolving...</span>`;
 		stream.appendChild(cycle);
-		await spinCycle(cycle, [
+		await spinCycle(h, cycle, [
 			{ text: "Resolving dependencies...", dur: 380 },
 			{ text: "Downloading wheels...", dur: 360 },
 			{ text: "Linking 47 files...", dur: 280 },
 		]);
+		if (h.bailed) return;
 		cycle.innerHTML = `<span class="glyph done">✓</span><span class="lbl">Resolved <b>47 packages</b> <span class="dim">in 312ms</span></span>`;
-		await sleep(80);
+		await trackedSleep(h, 80);
+		if (h.bailed) return;
 
 		// Phase 1c: install bars — staggered cascade.
 		const pkgLines = UV_PKGS.map((p) => {
@@ -162,9 +599,13 @@
 							return;
 						}
 						const tick = () => {
+							if (h.bailed) {
+								res();
+								return;
+							}
 							const now = performance.now();
 							if (now < start) {
-								requestAnimationFrame(tick);
+								trackedRaf(h, tick);
 								return;
 							}
 							const pct = Math.min(100, ((now - start) / dur) * 100);
@@ -177,25 +618,33 @@
 								glyph.classList.add("done");
 								res();
 							} else {
-								requestAnimationFrame(tick);
+								trackedRaf(h, tick);
 							}
 						};
-						requestAnimationFrame(tick);
+						trackedRaf(h, tick);
 					}),
 			),
 		);
-		await sleep(120);
+		if (h.bailed) return;
+		await trackedSleep(h, 120);
+		if (h.bailed) return;
 
 		// Phase 1d: summary.
 		const sumLine = document.createElement("div");
 		sumLine.className = "ln";
 		sumLine.innerHTML = `<span class="glyph done">✓</span><span class="lbl summary"><b>Installed 47 packages in 1.21s</b> <span class="dim">· 38 already cached</span></span>`;
 		stream.appendChild(sumLine);
-		await sleep(280);
+		await trackedSleep(h, 280);
+		if (h.bailed) return;
 
 		sessionStorage.setItem("uvsync.done", "1");
+
+		// Phase 2: ask UI.
+		mountAskUI(h, stream, true);
 	}
 
-	runUvSync();
-	document.addEventListener("astro:page-load", runUvSync);
+	void runUvSync();
+	document.addEventListener("astro:page-load", () => {
+		void runUvSync();
+	});
 </script>
