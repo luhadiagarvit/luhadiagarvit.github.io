@@ -1,0 +1,250 @@
+<div class="graph-canvas-wrap">
+	<canvas data-graph-canvas width="800" height="520"></canvas>
+	<ul class="graph-legend">
+		<li><span class="dot dot-post"></span> post</li>
+		<li><span class="dot dot-note"></span> note</li>
+		<li><span class="dot dot-evergreen"></span> evergreen</li>
+	</ul>
+	<div data-graph-empty class="graph-empty" hidden>
+		No notes yet — add a non-draft note in <code>src/content/notes/</code> to populate the graph.
+	</div>
+</div>
+
+<script>
+	type GraphNode = { id: string; title: string; kind: string; weight: number };
+	type GraphEdge = { source: string; target: string };
+	type GraphData = {
+		generated?: string;
+		nodes: GraphNode[];
+		edges: GraphEdge[];
+		stubs?: unknown[];
+	};
+
+	type Vec = { x: number; y: number; vx: number; vy: number; node: GraphNode };
+
+	const REPULSION = 1800; // pairwise Coulomb-like
+	const SPRING_K = 0.04; // edge attraction
+	const REST_LENGTH = 90;
+	const CENTER_PULL = 0.012;
+	const DAMPING = 0.86;
+	const MAX_TICKS = 220;
+	const SETTLE_VEL = 0.18;
+	const HIT_RADIUS_SQ = 200; // ~14px
+
+	// One active rAF id at a time. Re-mounts (astro:page-load) cancel
+	// the prior loop so we never get two simulations racing on the
+	// same canvas.
+	let activeRaf = 0;
+
+	function readColors(root: HTMLElement) {
+		const cs = getComputedStyle(root);
+		const get = (name: string) => cs.getPropertyValue(name).trim();
+		return {
+			accent: get("--color-accent") || "#aa3344",
+			accent2: get("--color-accent-2") || "#222",
+			muted: get("--color-muted") || "#888",
+			rule: get("--color-rule") || "#ccc",
+			text: get("--color-global-text") || "#222",
+		};
+	}
+
+	function nodeColor(kind: string, c: ReturnType<typeof readColors>): string {
+		if (kind === "post") return c.accent;
+		if (kind === "evergreen") return c.accent2;
+		return c.muted;
+	}
+
+	function nodeRadius(weight: number): number {
+		return 4 + Math.min(8, weight * 1.5);
+	}
+
+	function step(verts: Vec[], edges: GraphEdge[], idx: Map<string, Vec>, w: number, h: number): number {
+		// Pairwise repulsion (Coulomb-ish, capped at small distances).
+		for (let i = 0; i < verts.length; i++) {
+			const a = verts[i]!;
+			for (let j = i + 1; j < verts.length; j++) {
+				const b = verts[j]!;
+				const dx = a.x - b.x;
+				const dy = a.y - b.y;
+				const distSq = Math.max(40, dx * dx + dy * dy);
+				const force = REPULSION / distSq;
+				const dist = Math.sqrt(distSq);
+				const fx = (dx / dist) * force;
+				const fy = (dy / dist) * force;
+				a.vx += fx;
+				a.vy += fy;
+				b.vx -= fx;
+				b.vy -= fy;
+			}
+		}
+		// Spring attraction along edges.
+		for (const e of edges) {
+			const a = idx.get(e.source);
+			const b = idx.get(e.target);
+			if (!a || !b) continue;
+			const dx = b.x - a.x;
+			const dy = b.y - a.y;
+			const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+			const stretch = dist - REST_LENGTH;
+			const fx = (dx / dist) * stretch * SPRING_K;
+			const fy = (dy / dist) * stretch * SPRING_K;
+			a.vx += fx;
+			a.vy += fy;
+			b.vx -= fx;
+			b.vy -= fy;
+		}
+		// Weak center pull + integrate.
+		const cx = w / 2;
+		const cy = h / 2;
+		let maxV = 0;
+		for (const v of verts) {
+			v.vx += (cx - v.x) * CENTER_PULL;
+			v.vy += (cy - v.y) * CENTER_PULL;
+			v.vx *= DAMPING;
+			v.vy *= DAMPING;
+			v.x += v.vx;
+			v.y += v.vy;
+			const sp = Math.abs(v.vx) + Math.abs(v.vy);
+			if (sp > maxV) maxV = sp;
+		}
+		return maxV;
+	}
+
+	function draw(
+		ctx: CanvasRenderingContext2D,
+		verts: Vec[],
+		edges: GraphEdge[],
+		idx: Map<string, Vec>,
+		colors: ReturnType<typeof readColors>,
+		w: number,
+		h: number,
+	) {
+		ctx.clearRect(0, 0, w, h);
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = colors.rule;
+		ctx.beginPath();
+		for (const e of edges) {
+			const a = idx.get(e.source);
+			const b = idx.get(e.target);
+			if (!a || !b) continue;
+			ctx.moveTo(a.x, a.y);
+			ctx.lineTo(b.x, b.y);
+		}
+		ctx.stroke();
+
+		ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
+		ctx.textBaseline = "middle";
+		for (const v of verts) {
+			const r = nodeRadius(v.node.weight);
+			ctx.fillStyle = nodeColor(v.node.kind, colors);
+			ctx.beginPath();
+			ctx.arc(v.x, v.y, r, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.fillStyle = colors.muted;
+			ctx.fillText(v.node.title, v.x + r + 4, v.y);
+		}
+	}
+
+	async function init(): Promise<void> {
+		if (activeRaf) {
+			cancelAnimationFrame(activeRaf);
+			activeRaf = 0;
+		}
+		const wrap = document.querySelector<HTMLElement>(".graph-canvas-wrap");
+		if (!wrap) return;
+		const canvas = wrap.querySelector<HTMLCanvasElement>("[data-graph-canvas]");
+		const empty = wrap.querySelector<HTMLElement>("[data-graph-empty]");
+		if (!canvas || !empty) return;
+
+		let data: GraphData | null = null;
+		try {
+			const r = await fetch("/_data/graph.json", { cache: "force-cache" });
+			if (r.ok) data = (await r.json()) as GraphData;
+		} catch {
+			data = null;
+		}
+
+		if (!data || !data.nodes || data.nodes.length === 0) {
+			canvas.hidden = true;
+			empty.hidden = false;
+			return;
+		}
+		canvas.hidden = false;
+		empty.hidden = true;
+
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		const w = canvas.width;
+		const h = canvas.height;
+
+		// Seed positions on a circle so the layout has a stable start
+		// regardless of node count.
+		const verts: Vec[] = data.nodes.map((n, i) => {
+			const t = (i / data!.nodes.length) * Math.PI * 2;
+			const radius = Math.min(w, h) * 0.32;
+			return {
+				x: w / 2 + Math.cos(t) * radius,
+				y: h / 2 + Math.sin(t) * radius,
+				vx: 0,
+				vy: 0,
+				node: n,
+			};
+		});
+		const idx = new Map<string, Vec>(verts.map((v) => [v.node.id, v]));
+		const edges = data.edges ?? [];
+
+		const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+		if (reduced) {
+			// Run the sim synchronously to completion, draw once.
+			for (let i = 0; i < MAX_TICKS; i++) {
+				const v = step(verts, edges, idx, w, h);
+				if (v < SETTLE_VEL) break;
+			}
+			// Re-read colors at draw time so theme switches that happen
+			// before this frame still pick up correct values.
+			draw(ctx, verts, edges, idx, readColors(document.documentElement), w, h);
+		} else {
+			let ticks = 0;
+			const loop = () => {
+				const maxV = step(verts, edges, idx, w, h);
+				draw(ctx, verts, edges, idx, readColors(document.documentElement), w, h);
+				ticks++;
+				if (ticks >= MAX_TICKS || maxV < SETTLE_VEL) {
+					activeRaf = 0;
+					return;
+				}
+				activeRaf = requestAnimationFrame(loop);
+			};
+			activeRaf = requestAnimationFrame(loop);
+		}
+
+		// Click navigation — hit-test nearest node within HIT_RADIUS_SQ.
+		canvas.onclick = (e) => {
+			const rect = canvas.getBoundingClientRect();
+			const scaleX = canvas.width / rect.width;
+			const scaleY = canvas.height / rect.height;
+			const px = (e.clientX - rect.left) * scaleX;
+			const py = (e.clientY - rect.top) * scaleY;
+			let best: Vec | null = null;
+			let bestD = Infinity;
+			for (const v of verts) {
+				const dx = v.x - px;
+				const dy = v.y - py;
+				const d = dx * dx + dy * dy;
+				if (d < bestD) {
+					bestD = d;
+					best = v;
+				}
+			}
+			if (best && bestD <= HIT_RADIUS_SQ) {
+				location.href = `/notes/${best.node.id}/`;
+			}
+		};
+	}
+
+	void init();
+	document.addEventListener("astro:page-load", () => {
+		void init();
+	});
+</script>
