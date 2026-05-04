@@ -11,7 +11,8 @@
 		"preview": "astro preview",
 		"check": "astro check",
 		"format": "prettier -w . --cache",
-		"embeddings": "node scripts/build-embeddings.mjs"
+		"embeddings": "node scripts/build-embeddings.mjs",
+		"portrait:render": "node scripts/render-portrait.mjs"
 	},
 	"dependencies": {
 		"@astrojs/markdown-remark": "^7.0.0",
