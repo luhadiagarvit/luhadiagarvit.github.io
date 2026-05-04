@@ -1,0 +1,72 @@
+---
+interface NeighborItem {
+	slug: string;
+	title: string;
+	kind: string;
+}
+
+interface Props {
+	slug: string;
+	backlinks: NeighborItem[];
+	forwards: NeighborItem[];
+	siblings: NeighborItem[];
+}
+
+const { backlinks, forwards, siblings } = Astro.props;
+const isEmpty = backlinks.length + forwards.length + siblings.length === 0;
+---
+
+{
+	!isEmpty && (
+		<aside class="note-neighborhood" aria-label="Related notes">
+			{backlinks.length > 0 && (
+				<section>
+					<h3 class="nb-title">
+						<span class="nb-glyph">&larr;</span> backlinks
+					</h3>
+					<ul>
+						{backlinks.map((n) => (
+							<li>
+								<a href={`/notes/${n.slug}/`} class="cactus-link">
+									{n.title}
+								</a>
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
+			{forwards.length > 0 && (
+				<section>
+					<h3 class="nb-title">
+						<span class="nb-glyph">&rarr;</span> forwards
+					</h3>
+					<ul>
+						{forwards.map((n) => (
+							<li>
+								<a href={`/notes/${n.slug}/`} class="cactus-link">
+									{n.title}
+								</a>
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
+			{siblings.length > 0 && (
+				<section>
+					<h3 class="nb-title">
+						<span class="nb-glyph">&asymp;</span> siblings
+					</h3>
+					<ul>
+						{siblings.map((n) => (
+							<li>
+								<a href={`/notes/${n.slug}/`} class="cactus-link">
+									{n.title}
+								</a>
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
+		</aside>
+	)
+}

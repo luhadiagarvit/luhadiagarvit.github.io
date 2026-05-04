@@ -774,9 +774,57 @@
 .portrait-l4 { /* placeholder */ }
 .portrait-l5 { /* placeholder */ }
 
-/* note neighborhood — filled in v3 step 4 */
-.note-neighborhood { /* placeholder */ }
-.note-with-rail { /* placeholder */ }
+/* note neighborhood — v3 step 4. desktop two-column with sticky right rail
+ * at >=1024px; collapses to a footer block below. */
+.note-with-rail { display: block; }
+@media (min-width: 1024px) {
+	.note-with-rail {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 16rem;
+		gap: 2.5rem;
+		align-items: start;
+	}
+}
+
+.note-neighborhood {
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--color-muted);
+	border-top: 1px dashed var(--color-rule);
+	padding-top: 1.25rem;
+	margin-top: 2.5rem;
+}
+@media (min-width: 1024px) {
+	.note-neighborhood {
+		border-top: none;
+		padding-top: 0;
+		margin-top: 0;
+		position: sticky;
+		top: 5rem;
+	}
+}
+.note-neighborhood section + section { margin-top: 1.5rem; }
+.note-neighborhood .nb-title {
+	font-size: 11.5px;
+	font-weight: 500;
+	letter-spacing: 0.06em;
+	color: var(--color-muted);
+	text-transform: lowercase;
+	margin-bottom: 0.5rem;
+}
+.note-neighborhood .nb-glyph {
+	display: inline-block;
+	width: 1.25em;
+	color: var(--color-accent-2);
+}
+.note-neighborhood ul { list-style: none; padding: 0; margin: 0; }
+.note-neighborhood li { padding: 2px 0; }
+.note-neighborhood a { color: var(--color-global-text); text-decoration: none; }
+.note-neighborhood a:hover {
+	color: var(--color-link);
+	text-decoration: underline;
+	text-decoration-color: var(--color-rule);
+}
 
 /* wikilink stub indicator — v3 step 2 */
 .stub-link {

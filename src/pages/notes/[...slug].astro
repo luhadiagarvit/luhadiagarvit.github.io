@@ -4,7 +4,9 @@ import type { CollectionEntry } from "astro:content";
 import PageLayout from "@/layouts/Base.astro";
 import FormattedDate from "@/components/FormattedDate.astro";
 import TOC from "@/components/TOC.astro";
+import Neighborhood from "@/components/notes/Neighborhood.astro";
 import { readingTime } from "@/utils/readingTime";
+import { getNeighborhood } from "@/utils/neighborhood";
 
 export async function getStaticPaths() {
 	const notes = await getCollection("notes", ({ data }) => !data.draft);
@@ -30,6 +32,7 @@ interface Props {
 const { note, prev, next } = Astro.props;
 const { Content, headings } = await render(note);
 const minutes = readingTime(note.body ?? "");
+const { backlinks, forwards, siblings } = await getNeighborhood(note.id);
 
 const tocItems = headings
 	.filter((h) => h.depth === 2 || h.depth === 3)
@@ -44,60 +47,68 @@ const meta = {
 
 <PageLayout meta={meta}>
 	{tocItems.length > 2 && <TOC items={tocItems} />}
-	<article class="max-w-prose">
-		<header class="mb-8">
-			<h1 class="title mb-3 text-2xl leading-tight">
-				{note.data.kind !== "note" && (
-					<span class="kindmark">{note.data.kind}</span>
-				)}
-				{note.data.title}
-			</h1>
-			<div class="text-muted flex flex-wrap gap-x-3 text-xs">
-				<FormattedDate date={note.data.publishDate} />
-				<span>&middot;</span>
-				<span>{minutes}</span>
-				{
-					note.data.tags.length > 0 && (
-						<>
-							<span>&middot;</span>
-							<span class="flex flex-wrap gap-x-2">
-								{note.data.tags.map((t) => (
-									<a class="cactus-link" href={`/notes/tag/${t}/`}>
-										#{t}
-									</a>
-								))}
-							</span>
-						</>
-					)
-				}
+	<div class="note-with-rail">
+		<article class="max-w-prose">
+			<header class="mb-8">
+				<h1 class="title mb-3 text-2xl leading-tight">
+					{note.data.kind !== "note" && (
+						<span class="kindmark">{note.data.kind}</span>
+					)}
+					{note.data.title}
+				</h1>
+				<div class="text-muted flex flex-wrap gap-x-3 text-xs">
+					<FormattedDate date={note.data.publishDate} />
+					<span>&middot;</span>
+					<span>{minutes}</span>
+					{
+						note.data.tags.length > 0 && (
+							<>
+								<span>&middot;</span>
+								<span class="flex flex-wrap gap-x-2">
+									{note.data.tags.map((t) => (
+										<a class="cactus-link" href={`/notes/tag/${t}/`}>
+											#{t}
+										</a>
+									))}
+								</span>
+							</>
+						)
+					}
+				</div>
+			</header>
+
+			<div class="prose prose-sm text-global-text max-w-none">
+				<Content />
 			</div>
-		</header>
 
-		<div class="prose prose-sm text-global-text max-w-none">
-			<Content />
-		</div>
-
-		{
-			(prev || next) && (
-				<nav class="mt-12 flex justify-between gap-8 text-sm" aria-label="post navigation">
-					{prev ? (
-						<a class="cactus-link" href={`/notes/${prev.id}/`}>
-							&larr; {prev.data.title}
-						</a>
-					) : (
-						<span />
-					)}
-					{next ? (
-						<a class="cactus-link text-right" href={`/notes/${next.id}/`}>
-							{next.data.title} &rarr;
-						</a>
-					) : (
-						<span />
-					)}
-				</nav>
-			)
-		}
-	</article>
+			{
+				(prev || next) && (
+					<nav class="mt-12 flex justify-between gap-8 text-sm" aria-label="post navigation">
+						{prev ? (
+							<a class="cactus-link" href={`/notes/${prev.id}/`}>
+								&larr; {prev.data.title}
+							</a>
+						) : (
+							<span />
+						)}
+						{next ? (
+							<a class="cactus-link text-right" href={`/notes/${next.id}/`}>
+								{next.data.title} &rarr;
+							</a>
+						) : (
+							<span />
+						)}
+					</nav>
+				)
+			}
+		</article>
+		<Neighborhood
+			slug={note.id}
+			backlinks={backlinks}
+			forwards={forwards}
+			siblings={siblings}
+		/>
+	</div>
 
 	<script>
 		function initAnchorCopy() {
