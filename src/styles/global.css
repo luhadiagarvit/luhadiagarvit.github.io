@@ -764,8 +764,59 @@
 	.uvsync .cur::after { animation: none; }
 }
 
-/* alltrails — filled in v3 step 8 */
-.alltrails { /* placeholder */ }
+/* v3 step 8 — AllTrails /now module. Three most-recent trails; the
+ * featured (top) row gets a slope-paced ASCII reveal driven by JS. */
+.alltrails__row {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 8px 0;
+	border-bottom: 1px dashed var(--color-rule);
+}
+.alltrails__row:last-child { border-bottom: none; }
+.alltrails__head {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: baseline;
+}
+.alltrails__name { color: var(--color-global-text); font-weight: 500; }
+.alltrails__meta {
+	color: var(--color-muted);
+	font-size: 11.5px;
+	letter-spacing: 0.04em;
+}
+.alltrails__bar-wrap {
+	display: flex;
+	gap: 12px;
+	align-items: baseline;
+}
+.alltrails__bar {
+	font-family: inherit;
+	font-size: clamp(7px, 1.7vw, 14px);
+	line-height: 1;
+	color: var(--color-accent);
+	background: transparent;
+	margin: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	min-height: 1em;
+}
+.alltrails__row.is-featured .alltrails__bar { color: var(--color-accent-2); }
+.alltrails__alt {
+	color: var(--color-muted);
+	font-size: 11.5px;
+	min-width: 5em;
+	font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+	.alltrails__bar-wrap {
+		flex-direction: column;
+		gap: 2px;
+		align-items: stretch;
+	}
+	.alltrails__alt { min-width: 0; }
+}
 
 /* portrait 5-level — filled in v3 step 7 */
 .portrait-l1 { /* placeholder */ }
