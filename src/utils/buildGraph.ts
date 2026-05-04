@@ -1,4 +1,5 @@
 import { getCollection } from "astro:content";
+import { slugifyWikilink } from "./slugify";
 
 export type Slug = string;
 
@@ -28,13 +29,7 @@ export interface NoteGraph {
 
 const WIKILINK_RE = /\[\[([^\]]+)\]\]/g;
 
-export function slugifyWikilink(raw: string): Slug {
-	return raw
-		.trim()
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-+|-+$/g, "");
-}
+export { slugifyWikilink };
 
 export async function buildNoteGraph(): Promise<NoteGraph> {
 	const notes = await getCollection("notes", ({ data }) => !data.draft);

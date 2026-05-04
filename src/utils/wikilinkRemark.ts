@@ -3,6 +3,8 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { visit } from "unist-util-visit";
 
+import { slugifyWikilink } from "./slugify";
+
 const NOTES_DIR = fileURLToPath(new URL("../content/notes/", import.meta.url));
 const WIKILINK_RE = /\[\[([^\]]+)\]\]/g;
 
@@ -33,14 +35,6 @@ function collectSlugs(dir: string, base = dir): Set<string> {
 	return out;
 }
 
-function slugifyWikilink(raw: string): string {
-	return raw
-		.trim()
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-+|-+$/g, "");
-}
-
 function escapeHtml(s: string): string {
 	return s
 		.replace(/&/g, "&amp;")
@@ -50,11 +44,12 @@ function escapeHtml(s: string): string {
 }
 
 export function wikilinkRemark() {
-	const slugs = collectSlugs(NOTES_DIR);
 	return (tree: unknown) => {
+		const slugs = collectSlugs(NOTES_DIR);
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		visit(tree as any, "text", (node: any, index: number | undefined, parent: any) => {
 			if (!parent || index === undefined) return;
+			if (parent.type === "link") return;
 			const value: string = node.value;
 			if (!value || value.indexOf("[[") === -1) return;
 			const newChildren: unknown[] = [];
