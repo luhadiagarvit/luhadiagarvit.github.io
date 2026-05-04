@@ -10,6 +10,7 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeExternalLinks from "rehype-external-links";
 import rehypeUnwrapImages from "rehype-unwrap-images";
 import { expressiveCodeOptions, siteConfig } from "./src/site.config";
+import { wikilinkRemark } from "./src/utils/wikilinkRemark";
 
 export default defineConfig({
 	site: siteConfig.url,
@@ -20,6 +21,7 @@ export default defineConfig({
 		mdx(),
 	],
 	markdown: {
+		remarkPlugins: [wikilinkRemark],
 		rehypePlugins: [
 			rehypeHeadingIds,
 			[rehypeAutolinkHeadings, { behavior: "wrap", properties: { className: ["not-prose"] } }],

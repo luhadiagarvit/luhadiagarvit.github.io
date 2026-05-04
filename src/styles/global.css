@@ -726,8 +726,13 @@
 .note-neighborhood { /* placeholder */ }
 .note-with-rail { /* placeholder */ }
 
-/* wikilink stub indicator — filled in v3 step 2 */
-.stub-link { /* placeholder */ }
+/* wikilink stub indicator — v3 step 2 */
+.stub-link {
+	color: var(--color-muted);
+	text-decoration: underline dotted var(--color-rule);
+	text-underline-offset: 0.18em;
+	cursor: help;
+}
 
 /* graph + stubs pages — filled in v3 steps 5/6 */
 .graph-canvas { /* placeholder */ }
