@@ -65,4 +65,21 @@ const commitments = defineCollection({
 	}),
 });
 
-export const collections = { photos, publications, notes, commitments };
+const trails = defineCollection({
+	loader: glob({ base: "./src/content/trails", pattern: "**/*.{md,mdx}" }),
+	schema: z.object({
+		name: z.string(),
+		park: z.string(),
+		km: z.number(),
+		ascent_m: z.number(),
+		duration_min: z.number(),
+		date: z.string().or(z.date()).transform((v) => new Date(v)),
+		alltrails_url: z.string().optional(),
+		gpx_path: z.string().optional(),
+		elevation_profile: z.array(z.number()).length(64),
+		photos: z.array(z.string()).default([]),
+		featured: z.boolean().default(false),
+	}),
+});
+
+export const collections = { photos, publications, notes, commitments, trails };

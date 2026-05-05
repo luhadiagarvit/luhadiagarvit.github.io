@@ -1,5 +1,6 @@
 ---
 import { execSync } from "node:child_process";
+import AllTrails from "@/components/now/AllTrails.astro";
 import Commitments from "@/components/now/Commitments.astro";
 import Listening from "@/components/now/Listening.astro";
 import MoodGrid from "@/components/now/MoodGrid.astro";
@@ -57,5 +58,6 @@ const repoUrl = "https://github.com/luhadiagarvit/luhadiagarvit.github.io";
 	<MoodGrid />
 	<Portrait />
 	<Strava />
+	<AllTrails />
 	<Listening />
 </PageLayout>

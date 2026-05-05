@@ -1,0 +1,172 @@
+---
+import { getCollection } from "astro:content";
+
+const allTrails = await getCollection("trails");
+const sorted = allTrails.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const recent = sorted.slice(0, 3);
+
+// YTD totals (current calendar year).
+const yearStart = new Date(new Date().getFullYear(), 0, 1);
+const ytd = allTrails.filter((t) => t.data.date >= yearStart);
+const ytdCount = ytd.length;
+const ytdKm = ytd.reduce((s, t) => s + t.data.km, 0);
+const ytdAscent = ytd.reduce((s, t) => s + t.data.ascent_m, 0);
+
+const RAMP = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
+function bucketsToBlocks(profile: number[]): string {
+	const min = Math.min(...profile);
+	const max = Math.max(...profile);
+	const range = Math.max(1, max - min);
+	return profile
+		.map((v) => RAMP[Math.floor(((v - min) / range) * (RAMP.length - 1))] ?? "")
+		.join("");
+}
+
+function formatDate(d: Date): string {
+	return d.toISOString().slice(0, 10);
+}
+---
+
+{
+	recent.length > 0 && (
+		<section class="section alltrails" data-alltrails>
+			<div class="section__head">
+				<div class="section__title">// on trail</div>
+				<span class="section__meta">
+					{ytdCount} trails · {Math.round(ytdKm)} km · {ytdAscent} m gain ytd
+				</span>
+			</div>
+
+			{recent.map((t, i) => {
+				const isFeatured = i === 0;
+				const blocks = bucketsToBlocks(t.data.elevation_profile);
+				return (
+					<div class={`alltrails__row${isFeatured ? " is-featured" : ""}`}>
+						<div class="alltrails__head">
+							<span class="alltrails__name">{t.data.name}</span>
+							<span class="alltrails__meta">
+								{t.data.park} · {t.data.km} km · +{t.data.ascent_m} m ·{" "}
+								{t.data.duration_min} min · {formatDate(t.data.date)}
+							</span>
+						</div>
+						<div class="alltrails__bar-wrap">
+							<pre
+								class="alltrails__bar"
+								data-trail-bar={isFeatured ? "1" : "0"}
+								data-profile={JSON.stringify(t.data.elevation_profile)}
+							>{isFeatured ? "" : blocks}</pre>
+							<span class="alltrails__alt" data-trail-alt={isFeatured ? "1" : "0"}>
+								+{isFeatured ? "0" : t.data.ascent_m} m
+							</span>
+						</div>
+					</div>
+				);
+			})}
+		</section>
+	)
+}
+
+<script>
+	const RAMP = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
+
+	function delayForSlope(prev: number, next: number): number {
+		const delta = next - prev;
+		if (delta > 4) return 95; // steep up
+		if (delta > 1) return 60; // shallow up
+		if (delta > -1) return 35; // flat
+		if (delta > -3) return 22; // shallow down
+		return 14; // descent
+	}
+
+	let activeTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function reveal(barEl: HTMLElement, altEl: HTMLElement | null, profile: number[]) {
+		if (activeTimer) {
+			clearTimeout(activeTimer);
+			activeTimer = null;
+		}
+		const min = Math.min(...profile);
+		const max = Math.max(...profile);
+		const range = Math.max(1, max - min);
+		const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+		if (reduced) {
+			barEl.textContent = profile
+				.map((v) => RAMP[Math.floor(((v - min) / range) * (RAMP.length - 1))] ?? "")
+				.join("");
+			if (altEl) {
+				let pos = 0;
+				for (let i = 1; i < profile.length; i++) {
+					const cur = profile[i] ?? 0;
+					const prev = profile[i - 1] ?? 0;
+					const d = cur - prev;
+					if (d > 0) pos += d;
+				}
+				altEl.textContent = `+${Math.round(pos)} m`;
+			}
+			return;
+		}
+		barEl.textContent = "";
+		if (altEl) altEl.textContent = "+0 m";
+		let i = 0;
+		let positiveGain = 0;
+		function step() {
+			if (i >= profile.length) {
+				activeTimer = null;
+				return;
+			}
+			const v = profile[i] ?? 0;
+			const ch = RAMP[Math.floor(((v - min) / range) * (RAMP.length - 1))] ?? "";
+			barEl.textContent += ch;
+			let delay = 35;
+			if (i > 0) {
+				const prev = profile[i - 1] ?? 0;
+				const d = v - prev;
+				if (d > 0) positiveGain += d;
+				if (altEl) altEl.textContent = `+${Math.round(positiveGain)} m`;
+				delay = delayForSlope(prev, v);
+			}
+			i++;
+			activeTimer = setTimeout(step, delay);
+		}
+		activeTimer = setTimeout(step, 40);
+	}
+
+	function init() {
+		const root = document.querySelector<HTMLElement>("[data-alltrails]");
+		if (!root) return;
+		const featuredBar = root.querySelector<HTMLElement>('[data-trail-bar="1"]');
+		const featuredAlt = root.querySelector<HTMLElement>('[data-trail-alt="1"]');
+		if (!featuredBar) return;
+		const profile = JSON.parse(featuredBar.dataset.profile || "[]") as number[];
+		if (!profile.length) return;
+
+		reveal(featuredBar, featuredAlt, profile);
+
+		// MutationObserver pattern, applied pragmatically: replay when the page
+		// becomes visible again (tab switch, bfcache restore).
+		document.addEventListener("visibilitychange", () => {
+			if (document.visibilityState === "visible") {
+				reveal(featuredBar, featuredAlt, profile);
+			}
+		});
+
+		// Also watch class mutations on a parent — if some future tab system
+		// toggles `is-active` on .alltrails or its ancestors, replay then too.
+		let parent: HTMLElement | null = root.parentElement;
+		while (parent && parent !== document.body) {
+			const observer = new MutationObserver((muts) => {
+				for (const m of muts) {
+					if (m.type === "attributes" && m.attributeName === "class") {
+						reveal(featuredBar, featuredAlt, profile);
+						return;
+					}
+				}
+			});
+			observer.observe(parent, { attributes: true, attributeFilter: ["class"] });
+			parent = parent.parentElement;
+		}
+	}
+
+	init();
+	document.addEventListener("astro:page-load", init);
+</script>
