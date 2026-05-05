@@ -8,12 +8,26 @@
 		{
 			"pattern": "luhadiagarvit.me/api/contact",
 			"zone_name": "luhadiagarvit.me"
+		},
+		{
+			"pattern": "luhadiagarvit.me/api/trails",
+			"zone_name": "luhadiagarvit.me"
+		},
+		{
+			"pattern": "luhadiagarvit.me/api/streak",
+			"zone_name": "luhadiagarvit.me"
 		}
 	],
 	"send_email": [
 		{
 			"name": "MAIL",
 			"destination_address": "garvit.luhadia@un.org"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "PORTFOLIO_KV",
+			"id": "REPLACE_WITH_KV_NAMESPACE_ID"
 		}
 	],
 	"vars": {
