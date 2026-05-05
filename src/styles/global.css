@@ -921,10 +921,34 @@
 	.stubs-row { grid-template-columns: 1fr; gap: 4px; }
 }
 
-/* now-page last-updated stamp — filled in v3 step 10 */
-.now-stamp { /* placeholder */ }
+/* now-page last-updated stamp — real rules live at line 534 above (`.now-stamp`,
+ * `.now-stamp b`). Placeholder retired in v3 step 10. */
 
 /* legacy BootStream classes preserved as fallback per design v3 spec lines 158–180.
  * BootStream.astro stays on disk and may be re-mounted under the .boot-legacy
- * scope if a future step needs the old hero. The actual .boot* rules live above. */
+ * scope if a future step needs the old hero. The actual .boot* rules (lines 468–490)
+ * use BEM (`.boot__line`, `.boot__bar`, `.boot__cursor`) and don't collide with
+ * the v3 `.uvsync .ln`/`.uvsync .bar`/`.uvsync .cur` selectors — verified in v3
+ * step 10 audit. They stay inert when BootStream.astro isn't rendered. */
 .boot-legacy { /* preserved */ }
+
+/* v3 step 10 — hide interactive v3 components in print.
+ * The /cv print block above (lines 645–686) handles base typography + chrome;
+ * this block layers on hides for the install transcript, ask UI, AllTrails,
+ * graph canvas, stubs list, and note neighborhood rail. Static modules
+ * (Portrait, MoodGrid, Listening, Strava, Commitments) stay visible — they
+ * read fine on paper. */
+@media print {
+	.uvsync,
+	.uvsync__ask,
+	.uvsync__chips,
+	.uvsync__results,
+	.alltrails,
+	.graph-canvas-wrap,
+	.graph-legend,
+	.graph-empty,
+	.stubs-list,
+	.note-neighborhood {
+		display: none !important;
+	}
+}
