@@ -1,34 +1,34 @@
 #!/usr/bin/env node
 /**
- * v3 step 7 — render 5-density ASCII portraits via jp2a (or chafa as fallback).
+ * v3 step 7 — render 5-density ASCII portraits using sharp.
  *
  * Source: private/portrait-source.{jpg,jpeg,png} at the repo root (gitignored).
  * Output: public/portrait/L1.txt … L5.txt.
  *
- * The 5 widths and character ramps map streak → density (matches the
- * level numbering used by src/components/now/Portrait.astro):
+ * Uses sharp (already a dep via Astro's image pipeline) — no external system
+ * tools required. Each level resizes the source to a different character
+ * grid, normalizes the brightness range, and maps each cell to a glyph from
+ * a density ramp (sparse glyph = bright pixel, dense glyph = dark pixel).
  *
+ * Level → streak mapping lives in src/components/now/Portrait.astro:
  *   L5 (crisp)  → 80 chars wide, fine ramp
  *   L4 (sharp)  → 64 chars wide, fine ramp
  *   L3 (soft)   → 50 chars wide, mid ramp
  *   L2 (faded)  → 36 chars wide, sparse ramp
  *   L1 (gone)   → 22 chars wide, sparse ramp
  *
- * The current files committed to the repo are HAND-AUTHORED and intentionally
- * narrower than the spec widths — they were tuned by hand for the layout. To
- * preserve them, this script refuses to overwrite without --force.
+ * Files committed to the repo are intentional — this script refuses to
+ * overwrite without --force.
  *
  * Usage:
  *   pnpm portrait:render            # dry-run (lists what it would write)
- *   pnpm portrait:render --force    # actually overwrite L1.txt..L5.txt
- *
- * Requires `brew install jp2a` (or `brew install chafa` as a fallback).
+ *   pnpm portrait:render --force    # overwrite L1.txt..L5.txt
  */
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
-import { execFileSync } from "node:child_process";
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const SOURCE_CANDIDATES = [
@@ -38,8 +38,12 @@ const SOURCE_CANDIDATES = [
 ];
 const OUT_DIR = join(ROOT, "public", "portrait");
 
+// Terminal cells are roughly 2× as tall as wide in monospace fonts, so
+// height = width × 0.5 keeps a square source rendering as a square portrait.
+const ASPECT = 0.5;
+
 const LEVELS = [
-	{ level: 5, width: 80, ramp: " .-:=+*#%@" },
+	{ level: 5, width: 80, ramp: " .'`,:;-_~+=*#%@$" },
 	{ level: 4, width: 64, ramp: " .-:=+*#%@" },
 	{ level: 3, width: 50, ramp: " .,-=+#@" },
 	{ level: 2, width: 36, ramp: " .:#" },
@@ -53,38 +57,33 @@ function findSource() {
 	return null;
 }
 
-function detectTool() {
-	for (const tool of ["jp2a", "chafa"]) {
-		try {
-			execFileSync("which", [tool], { stdio: ["ignore", "ignore", "ignore"] });
-			return tool;
-		} catch {
-			/* not installed */
+async function rasterize(source, width, ramp) {
+	const height = Math.max(1, Math.round(width * ASPECT));
+	const { data, info } = await sharp(source)
+		.resize(width, height, { fit: "fill" })
+		.greyscale()
+		.raw()
+		.toBuffer({ resolveWithObject: true });
+	// Normalize the brightness range so contrast is consistent across photos.
+	let min = 255;
+	let max = 0;
+	for (let i = 0; i < data.length; i++) {
+		if (data[i] < min) min = data[i];
+		if (data[i] > max) max = data[i];
+	}
+	const range = Math.max(1, max - min);
+	const lines = [];
+	for (let y = 0; y < info.height; y++) {
+		let row = "";
+		for (let x = 0; x < info.width; x++) {
+			const norm = (data[y * info.width + x] - min) / range; // 0..1
+			// Dark pixel → end of ramp (densest glyph). Bright → start (space).
+			const idx = Math.floor((1 - norm) * (ramp.length - 1));
+			row += ramp[idx];
 		}
+		lines.push(row);
 	}
-	return null;
-}
-
-function renderWith(tool, source, level) {
-	if (tool === "jp2a") {
-		return execFileSync(
-			"jp2a",
-			[`--width=${level.width}`, `--chars=${level.ramp}`, source],
-			{ encoding: "utf8" },
-		);
-	}
-	// chafa fallback — monochrome ASCII, no ANSI.
-	return execFileSync(
-		"chafa",
-		[
-			`--size=${level.width}x`,
-			"--symbols=ascii",
-			"--colors=none",
-			"--fg-only",
-			source,
-		],
-		{ encoding: "utf8" },
-	);
+	return lines.join("\n") + "\n";
 }
 
 async function main() {
@@ -100,33 +99,22 @@ async function main() {
 		return;
 	}
 
-	const tool = detectTool();
-	if (!tool) {
-		console.warn("[portrait] no ASCII tool found on PATH.");
-		console.warn("[portrait] install one of:");
-		console.warn("  brew install jp2a   # preferred");
-		console.warn("  brew install chafa  # fallback");
-		return;
-	}
-
 	if (!force) {
-		console.log(`[portrait] dry-run (source: ${src}, tool: ${tool}).`);
-		console.log("[portrait] pass --force to overwrite the hand-authored files.");
+		console.log(`[portrait] dry-run (source: ${src}).`);
+		console.log("[portrait] pass --force to overwrite L1..L5.");
 		for (const l of LEVELS) {
-			console.log(
-				`  would write public/portrait/L${l.level}.txt (${l.width} chars wide)`,
-			);
+			const h = Math.round(l.width * ASPECT);
+			console.log(`  would write public/portrait/L${l.level}.txt (${l.width}×${h})`);
 		}
 		return;
 	}
 
 	await mkdir(OUT_DIR, { recursive: true });
 	for (const l of LEVELS) {
-		const out = renderWith(tool, src, l);
+		const out = await rasterize(src, l.width, l.ramp);
 		await writeFile(join(OUT_DIR, `L${l.level}.txt`), out);
-		console.log(
-			`[portrait] wrote public/portrait/L${l.level}.txt (${l.width} chars wide, ${tool})`,
-		);
+		const h = Math.round(l.width * ASPECT);
+		console.log(`[portrait] wrote public/portrait/L${l.level}.txt (${l.width}×${h})`);
 	}
 }
 
