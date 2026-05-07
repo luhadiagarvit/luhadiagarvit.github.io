@@ -130,9 +130,24 @@ async function handleStreak(request: Request, env: Env): Promise<Response> {
 	} catch {
 		return json({ error: "invalid json" }, 400);
 	}
-	const value = typeof body.value === "number" ? body.value : null;
-	const updated = typeof body.updated === "string" ? body.updated : null;
-	if (value === null || !updated) return json({ error: "missing value or updated" }, 400);
+	// iOS Shortcuts often sends Number variables as JSON strings — coerce.
+	const rawValue = body.value;
+	let value: number | null = null;
+	if (typeof rawValue === "number" && Number.isFinite(rawValue)) value = rawValue;
+	else if (typeof rawValue === "string" && rawValue.trim() !== "" && Number.isFinite(Number(rawValue))) value = Number(rawValue);
+	const updated = typeof body.updated === "string" && body.updated.trim() !== "" ? body.updated : null;
+	if (value === null || !updated) {
+		return json(
+			{
+				error: "missing value or updated",
+				received_keys: Object.keys(body),
+				value_type: typeof rawValue,
+				value_preview: typeof rawValue === "object" ? JSON.stringify(rawValue) : String(rawValue),
+				updated_type: typeof body.updated,
+			},
+			400,
+		);
+	}
 	await env.PORTFOLIO_KV.put("streak:current", JSON.stringify({ value, updated }));
 	return json({ ok: true }, 200);
 }
