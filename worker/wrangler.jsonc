@@ -16,6 +16,18 @@
 		{
 			"pattern": "luhadiagarvit.me/api/streak",
 			"zone_name": "luhadiagarvit.me"
+		},
+		{
+			"pattern": "luhadiagarvit.me/api/habit",
+			"zone_name": "luhadiagarvit.me"
+		},
+		{
+			"pattern": "luhadiagarvit.me/api/wellbeing",
+			"zone_name": "luhadiagarvit.me"
+		},
+		{
+			"pattern": "luhadiagarvit.me/api/event",
+			"zone_name": "luhadiagarvit.me"
 		}
 	],
 	"send_email": [
