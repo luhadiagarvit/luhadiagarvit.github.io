@@ -1,5 +1,6 @@
 import { EmailMessage } from "cloudflare:email";
 import { createMimeMessage } from "mimetext";
+import { PGP_PUBLIC_KEY } from "./pgp";
 
 interface Env {
 	TURNSTILE_SECRET_KEY: string;
@@ -80,6 +81,21 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
 	const verify = (await verifyRes.json()) as { success: boolean; "error-codes"?: string[] };
 	if (!verify.success) return json({ error: "Captcha failed" }, 400);
 
+	// Encrypt the message body with the user's PGP public key. Name + reply
+	// address + IP stay plaintext so the user can triage; the message content
+	// becomes armored ciphertext. Hard-fail if encryption breaks — never send plaintext.
+	let encryptedMessage: string;
+	try {
+		const { readKey, createMessage, encrypt } = await import("openpgp");
+		const publicKey = await readKey({ armoredKey: PGP_PUBLIC_KEY });
+		encryptedMessage = (await encrypt({
+			message: await createMessage({ text: message }),
+			encryptionKeys: publicKey,
+		})) as string;
+	} catch {
+		return json({ error: "Encryption failed" }, 500);
+	}
+
 	const mime = createMimeMessage();
 	mime.setSender({ name: "luhadiagarvit.me contact form", addr: env.FROM_EMAIL });
 	mime.setRecipient(env.TO_EMAIL);
@@ -87,7 +103,7 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
 	mime.setHeader("Reply-To", `${name} <${fromEmail}>`);
 	mime.addMessage({
 		contentType: "text/plain",
-		data: `From: ${name} <${fromEmail}>\nIP: ${ip}\n\n${message}\n`,
+		data: `From: ${name} <${fromEmail}>\nIP: ${ip}\n\n--- PGP ENCRYPTED MESSAGE ---\nDecrypt with: pbpaste | gpg --decrypt\n\n${encryptedMessage}\n`,
 	});
 
 	const email = new EmailMessage(env.FROM_EMAIL, env.TO_EMAIL, mime.asRaw());
