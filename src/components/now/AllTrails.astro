@@ -35,6 +35,8 @@ function formatDate(d: Date): string {
 				<span class="section__meta">
 					{ytdCount} trails · {Math.round(ytdKm)} km · {ytdAscent} m gain ytd
 				</span>
+				{/* TODO(v3.1): set href to user's real AllTrails profile, e.g. https://www.alltrails.com/members/garvit-luhadia */}
+				<a class="section__more" href="REPLACE_WITH_ALLTRAILS_URL" rel="noreferrer" target="_blank">alltrails →</a>
 			</div>
 
 			{recent.map((t, i) => {
