@@ -554,30 +554,18 @@
 .commits-week__head { display: flex; justify-content: space-between; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 8px; font-variant-numeric: tabular-nums; }
 .commits-week__head .score { color: var(--color-accent); }
 
-/* now — mood */
-.mood__grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; max-width: 480px; }
-.mood__cell { aspect-ratio: 1; border-radius: 2px; background: var(--color-card); border: 1px solid var(--color-rule); position: relative; cursor: default; transition: transform 120ms; }
-.mood__cell.s1 { background: oklch(85% 0.04 28); border-color: oklch(78% 0.05 28); }
-.mood__cell.s2 { background: oklch(82% 0.06 60); border-color: oklch(74% 0.07 60); }
-.mood__cell.s3 { background: oklch(80% 0.05 90); border-color: oklch(72% 0.06 90); }
-.mood__cell.s4 { background: oklch(78% 0.07 145); border-color: oklch(70% 0.08 145); }
-.mood__cell.s5 { background: oklch(74% 0.10 162); border-color: oklch(66% 0.11 162); }
-.mood__cell.empty { background: transparent; border-style: dashed; }
-.mood__cell:hover { transform: scale(1.4); z-index: 2; box-shadow: 0 4px 12px oklch(0% 0 0 / 0.15); }
-.mood__cell .tt { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--color-accent-2); color: var(--color-global-bg); font-size: 10px; padding: 3px 7px; border-radius: 2px; white-space: nowrap; opacity: 0; pointer-events: none; transition: 120ms; letter-spacing: 0.04em; }
-.mood__cell:hover .tt { opacity: 1; }
-.mood__legend { display: flex; gap: 6px; align-items: center; font-size: 10.5px; color: var(--color-muted); margin-top: 14px; letter-spacing: 0.08em; text-transform: uppercase; }
-.mood__legend .swatch { width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--color-rule); }
-.mood__legend .swatch.s1 { background: oklch(85% 0.04 28); border-color: oklch(78% 0.05 28); }
-.mood__legend .swatch.s2 { background: oklch(82% 0.06 60); border-color: oklch(74% 0.07 60); }
-.mood__legend .swatch.s3 { background: oklch(80% 0.05 90); border-color: oklch(72% 0.06 90); }
-.mood__legend .swatch.s4 { background: oklch(78% 0.07 145); border-color: oklch(70% 0.08 145); }
-.mood__legend .swatch.s5 { background: oklch(74% 0.10 162); border-color: oklch(66% 0.11 162); }
-.mood__habits { display: flex; gap: 14px; margin-top: 14px; font-size: 11.5px; color: var(--color-muted); flex-wrap: wrap; }
-.mood__habit { display: inline-flex; align-items: center; gap: 6px; }
-.mood__habit .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-rule); border: 1px solid var(--color-rule); }
-.mood__habit .dot.is-on { background: var(--color-accent); border-color: var(--color-accent); }
-.mood__habit .pct { color: var(--color-accent-2); font-variant-numeric: tabular-nums; }
+/* now — mood (v3.1 step 6: 5-tone valence palette + outline empty state) */
+.mood-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; max-width: 480px; }
+.mood-cell { aspect-ratio: 1; border-radius: 2px; background: var(--color-card); border: 1px solid var(--color-rule); display: block; cursor: default; transition: transform 120ms; }
+.mood-cell:hover { transform: scale(1.4); z-index: 2; box-shadow: 0 4px 12px oklch(0% 0 0 / 0.15); position: relative; }
+.mood-cell--good        { background: var(--color-accent);       border-color: var(--color-accent); }
+.mood-cell--ok-positive { background: var(--color-accent-2);     border-color: var(--color-accent-2); opacity: 0.85; }
+.mood-cell--neutral     { background: var(--color-global-text);  border-color: var(--color-global-text); opacity: 0.4; }
+.mood-cell--ok-negative { background: var(--color-muted);        border-color: var(--color-muted);     opacity: 0.6; }
+.mood-cell--rough       { background: var(--color-muted);        border-color: var(--color-muted);     opacity: 0.3; }
+.mood-cell--empty       { background: transparent; border: 1px solid var(--color-rule); border-style: dashed; }
+.mood-legend { display: flex; gap: 6px; align-items: center; font-size: 10.5px; color: var(--color-muted); margin-top: 14px; letter-spacing: 0.08em; text-transform: uppercase; }
+.mood-swatch { width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--color-rule); display: inline-block; }
 
 /* now — ASCII portrait */
 .portrait { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: start; padding: 18px 20px; border: 1px dashed var(--color-rule); border-radius: 3px; margin-top: 18px; background: var(--color-card); }

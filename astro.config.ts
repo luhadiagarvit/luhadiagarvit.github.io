@@ -87,6 +87,14 @@ const buildKvSync = {
 				);
 			}
 			try {
+				await syncMood({ token, account, ns });
+			} catch (e) {
+				console.warn(
+					"[kv] mood sync failed:",
+					e instanceof Error ? e.message : String(e),
+				);
+			}
+			try {
 				await syncEvents({ token, account, ns });
 			} catch (e) {
 				console.warn(
@@ -229,6 +237,48 @@ async function syncHabits(c: KvCreds): Promise<void> {
 	const out = { generated: new Date().toISOString(), days };
 	const path = new URL(
 		"./src/content/now/habits-30d.json",
+		import.meta.url,
+	);
+	await fs.promises.writeFile(path, `${JSON.stringify(out, null, 2)}\n`);
+}
+
+// v3.1 step 6 — mood sync. Each `mood:<YYYY-MM-DD>` KV key holds a payload
+// of shape `{entries: [{kind, valence, labels}]}`. We aggregate into the
+// last-30-days window (today inclusive); days outside the window are
+// ignored, days with no KV data are emitted with `entries: []` so the
+// grid always has 30 cells. MoodGrid reads the raw entries and computes
+// aggregate valence + tooltip labels at render time.
+async function syncMood(c: KvCreds): Promise<void> {
+	const keys = await kvList(c, "mood:");
+	const today = new Date();
+	const window = lastNDates(30, today);
+	const windowSet = new Set(window);
+	const perDay = new Map<string, unknown[]>();
+	for (const date of window) perDay.set(date, []);
+	for (const k of keys) {
+		// key shape: mood:<YYYY-MM-DD>
+		const parts = k.split(":");
+		if (parts.length !== 2) continue;
+		const date = parts[1];
+		if (!date || !windowSet.has(date)) continue;
+		const raw = await kvGet(c, k);
+		if (!raw) continue;
+		let payload: { entries?: unknown };
+		try {
+			payload = JSON.parse(raw);
+		} catch {
+			continue;
+		}
+		if (!Array.isArray(payload.entries)) continue;
+		perDay.set(date, payload.entries as unknown[]);
+	}
+	const days = window.map((date) => ({
+		date,
+		entries: perDay.get(date) ?? [],
+	}));
+	const out = { generated: new Date().toISOString(), days };
+	const path = new URL(
+		"./src/content/now/mood-30d.json",
 		import.meta.url,
 	);
 	await fs.promises.writeFile(path, `${JSON.stringify(out, null, 2)}\n`);
