@@ -33,7 +33,7 @@
 	"send_email": [
 		{
 			"name": "MAIL",
-			"destination_address": "garvit.luhadia@un.org"
+			"destination_address": "crf7fpzw5p@privaterelay.appleid.com"
 		}
 	],
 	"kv_namespaces": [
@@ -44,7 +44,7 @@
 	],
 	"vars": {
 		"FROM_EMAIL": "form@luhadiagarvit.me",
-		"TO_EMAIL": "garvit.luhadia@un.org"
+		"TO_EMAIL": "crf7fpzw5p@privaterelay.appleid.com"
 	},
 	"observability": {
 		"enabled": true

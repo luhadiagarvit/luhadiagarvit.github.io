@@ -12,7 +12,7 @@ binding — no third-party mailer.
 The recipient address must be a **verified destination** in Email Routing.
 
 1. `dash.cloudflare.com` → zone `luhadiagarvit.me` → **Email → Email Routing → Destination addresses**.
-2. **Add destination**: `garvit.luhadia@un.org`.
+2. **Add destination**: `crf7fpzw5p@privaterelay.appleid.com`.
 3. Check that inbox for a verification email; click the confirm link.
 
 Outbound sends from the Worker will only deliver to addresses verified
@@ -71,9 +71,9 @@ email instead of sending. Real sends only happen on deployed Workers.
 | Name | Type | Where set |
 | --- | --- | --- |
 | `TURNSTILE_SECRET_KEY` | Secret | `wrangler secret put` |
-| `TO_EMAIL` | Var | `wrangler.jsonc` (`garvit.luhadia@un.org`) |
+| `TO_EMAIL` | Var | `wrangler.jsonc` (`crf7fpzw5p@privaterelay.appleid.com`) |
 | `FROM_EMAIL` | Var | `wrangler.jsonc` (`form@luhadiagarvit.me`) |
-| `MAIL` | Binding | `wrangler.jsonc` `send_email` block, destination pinned to `garvit.luhadia@un.org` |
+| `MAIL` | Binding | `wrangler.jsonc` `send_email` block, destination pinned to `crf7fpzw5p@privaterelay.appleid.com` |
 
 ## Verification
 
@@ -88,4 +88,4 @@ curl -X POST https://luhadiagarvit.me/api/contact \
 
 End-to-end test: submit the real form at
 `https://luhadiagarvit.me/contact` and check
-`garvit.luhadia@un.org`.
+`crf7fpzw5p@privaterelay.appleid.com`.
