@@ -1,24 +1,102 @@
 ---
-import data from "@/content/now/mood-30d.json";
+// v3.1 step 6 — MoodGrid reads the new mood-30d.json schema produced by
+// the KV sync in astro.config.ts (and by hand when KV creds are absent):
+//   { generated, days: [{date: "YYYY-MM-DD", entries: [{kind, valence, labels}]}] }
+// For each of the last 30 days we average the entries' numeric valence
+// (entries with no numeric valence are skipped), map -1..1 onto a 5-tone
+// intensity scale, and emit a single span per cell. Days with no entries
+// render as an outline-only "empty" cell so the grid always has 30 cells.
+import mood from "@/content/now/mood-30d.json";
 
-const empties = new Set<number>(data.empties);
-const cells = data.scores.map((score: number, i: number) => ({
-	score,
-	empty: empties.has(i),
-}));
+interface MoodEntry {
+	kind?: string;
+	valence?: number;
+	labels?: string[];
+}
+interface MoodDay {
+	date: string;
+	entries: MoodEntry[];
+}
+const days: MoodDay[] = Array.isArray((mood as { days?: unknown }).days)
+	? ((mood as { days: MoodDay[] }).days)
+	: [];
+const dayIndex = new Map<string, MoodDay>(days.map((d) => [d.date, d]));
 
-const moodWords = ["rough", "meh", "steady", "good", "great"];
-function moodWord(score: number): string {
-	return moodWords[Math.max(0, Math.min(4, score - 1))] ?? "";
+type Tone = "good" | "ok-positive" | "neutral" | "ok-negative" | "rough" | "empty";
+
+function toneFromValence(v: number): Tone {
+	if (v >= 0.6) return "good";
+	if (v >= 0.2) return "ok-positive";
+	if (v >= -0.2) return "neutral";
+	if (v >= -0.6) return "ok-negative";
+	return "rough";
 }
 
-const todayDate = new Date(`${data.today}T00:00:00Z`);
-function dateLabel(i: number): string {
-	const d = new Date(todayDate.getTime());
-	d.setUTCDate(d.getUTCDate() - (29 - i));
-	const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-	const dd = String(d.getUTCDate()).padStart(2, "0");
-	return `${mm}-${dd}`;
+function summarize(entries: MoodEntry[]): string {
+	const counts = new Map<string, number>();
+	const labels: string[] = [];
+	for (const e of entries) {
+		if (typeof e.kind === "string" && e.kind) {
+			counts.set(e.kind, (counts.get(e.kind) ?? 0) + 1);
+		}
+		if (Array.isArray(e.labels)) {
+			for (const l of e.labels) if (typeof l === "string" && l) labels.push(l);
+		}
+	}
+	const kindParts: string[] = [];
+	for (const [k, n] of counts) kindParts.push(`${n} ${k}${n === 1 ? "" : "s"}`);
+	const uniqLabels = Array.from(new Set(labels)).slice(0, 4);
+	const segments: string[] = [];
+	if (kindParts.length > 0) segments.push(kindParts.join(", "));
+	if (uniqLabels.length > 0) segments.push(uniqLabels.join(" + "));
+	return segments.join(" · ");
+}
+
+// Build last-30-days window ending today (UTC) so the cells align with
+// the KV sync's window in astro.config.ts.
+const todayUtc = new Date();
+const base = new Date(Date.UTC(
+	todayUtc.getUTCFullYear(),
+	todayUtc.getUTCMonth(),
+	todayUtc.getUTCDate(),
+));
+interface Cell {
+	date: string;
+	tone: Tone;
+	label: string;
+}
+const cells: Cell[] = [];
+for (let i = 29; i >= 0; i--) {
+	const d = new Date(base);
+	d.setUTCDate(d.getUTCDate() - i);
+	const date = d.toISOString().slice(0, 10);
+	const day = dayIndex.get(date);
+	const entries = day && Array.isArray(day.entries) ? day.entries : [];
+	const valences = entries
+		.map((e) => (typeof e.valence === "number" ? e.valence : null))
+		.filter((v): v is number => v !== null && Number.isFinite(v));
+	if (entries.length === 0) {
+		cells.push({ date, tone: "empty", label: date });
+		continue;
+	}
+	if (valences.length === 0) {
+		// has entries but none had numeric valence — render as neutral so
+		// the cell still reads as "there was a check-in".
+		const summary = summarize(entries);
+		cells.push({
+			date,
+			tone: "neutral",
+			label: summary ? `${date} · ${summary}` : date,
+		});
+		continue;
+	}
+	const mean = valences.reduce((a, b) => a + b, 0) / valences.length;
+	const summary = summarize(entries);
+	cells.push({
+		date,
+		tone: toneFromValence(mean),
+		label: summary ? `${date} · ${summary}` : date,
+	});
 }
 ---
 
@@ -27,30 +105,19 @@ function dateLabel(i: number): string {
 		<div class="section__title">today, looking back</div>
 		<span class="section__meta">last 30 nights</span>
 	</div>
-	<p class="section__lede">One tap on my phone every night. Day rating + the four habits I'm trying to keep.</p>
-	<div class="mood__grid">
+	<p class="section__lede">Aggregated from Apple's State of Mind check-ins. Brighter cells are more positive; outline-only cells are days I didn't log.</p>
+	<div class="mood-grid">
 		{
-			cells.map((c, i) => (
-				<div class={`mood__cell ${c.empty ? "empty" : "s" + c.score}`}>
-					<span class="tt">
-						{dateLabel(i)} · {c.empty ? "no check-in" : moodWord(c.score)}
-					</span>
-				</div>
+			cells.map((c) => (
+				<span
+					class={`mood-cell mood-cell--${c.tone}`}
+					title={c.label}
+					data-date={c.date}
+				/>
 			))
 		}
 	</div>
-	<div class="mood__legend">
-		less <span class="swatch s1"></span><span class="swatch s2"></span><span class="swatch s3"></span><span
-			class="swatch s4"></span><span class="swatch s5"></span> more
-	</div>
-	<div class="mood__habits">
-		{
-			data.habits.map((h) => (
-				<span class="mood__habit">
-					<span class="dot is-on" />
-					{h.name} <span class="pct">{h.done}/{h.total}</span>
-				</span>
-			))
-		}
+	<div class="mood-legend">
+		less <span class="mood-swatch mood-cell--rough"></span><span class="mood-swatch mood-cell--ok-negative"></span><span class="mood-swatch mood-cell--neutral"></span><span class="mood-swatch mood-cell--ok-positive"></span><span class="mood-swatch mood-cell--good"></span> more
 	</div>
 </section>

@@ -1,11 +1,4 @@
 {
-  "today": "2026-04-19",
-  "scores": [3,4,2,3,4,5,4,3,2,4,5,3,4,5,4,5,3,2,4,4,3,5,4,3,4,5,4,3,4,5],
-  "empties": [4, 11, 25],
-  "habits": [
-    { "name": "meditate", "done": 17, "total": 30 },
-    { "name": "journal", "done": 21, "total": 30 },
-    { "name": "gratitude", "done": 12, "total": 30 },
-    { "name": "move", "done": 19, "total": 30 }
-  ]
+  "generated": "2026-05-12T00:00:00.000Z",
+  "days": []
 }

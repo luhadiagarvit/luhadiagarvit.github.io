@@ -1,0 +1,8 @@
+{
+  "thresholds": {
+    "meditate": { "min_minutes": 1, "label": "meditate" },
+    "reflect": { "min_count": 1, "label": "reflect" },
+    "move": { "min_steps": 8000, "label": "move" },
+    "read": { "min_minutes": 10, "label": "read" }
+  }
+}
