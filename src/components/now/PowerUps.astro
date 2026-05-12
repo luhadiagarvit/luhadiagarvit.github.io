@@ -1,0 +1,86 @@
+---
+import habits from "@/content/now/habits-30d.json";
+import config from "@/content/now/habits-config.json";
+import { habitLevel, type Level } from "@/utils/habitLevel";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+type HabitName = "meditate" | "reflect" | "move" | "read";
+
+interface HabitDay {
+	date: string;
+	meditate: number | null;
+	reflect: number | null;
+	move: number | null;
+	read: number | null;
+}
+
+const days = (habits.days ?? []) as HabitDay[];
+const TOTAL = 30;
+
+const thresholds = config.thresholds as {
+	meditate: { min_minutes: number; label: string };
+	reflect: { min_count: number; label: string };
+	move: { min_steps: number; label: string };
+	read: { min_minutes: number; label: string };
+};
+
+function countDone(habit: HabitName): number {
+	let n = 0;
+	for (const day of days) {
+		const v = day[habit];
+		if (v === null || v === undefined) continue;
+		if (habit === "meditate" && v >= thresholds.meditate.min_minutes) n++;
+		else if (habit === "reflect" && v >= thresholds.reflect.min_count) n++;
+		else if (habit === "move" && v >= thresholds.move.min_steps) n++;
+		else if (habit === "read" && v >= thresholds.read.min_minutes) n++;
+	}
+	return n;
+}
+
+interface PowerUp {
+	habit: HabitName;
+	label: string;
+	done: number;
+	total: number;
+	level: Level;
+	art: string;
+}
+
+const order: HabitName[] = ["meditate", "reflect", "move", "read"];
+
+const powerups: PowerUp[] = order.map((habit) => {
+	const done = countDone(habit);
+	const rate = done / TOTAL;
+	const level = habitLevel(rate);
+	const art = readFileSync(
+		resolve(`./public/powerups/${habit}/L${level}.txt`),
+		"utf8",
+	);
+	return {
+		habit,
+		label: thresholds[habit].label,
+		done,
+		total: TOTAL,
+		level,
+		art,
+	};
+});
+---
+
+<section class="section powerups" data-powerups>
+	<div class="section__head">
+		<div class="section__title">power-ups — last 30 days</div>
+	</div>
+	<div class="powerups__grid">
+		{powerups.map((p) => (
+			<article class={`powerup powerup--${p.habit} powerup--l${p.level}`} data-habit={p.habit}>
+				<pre class="powerup__art">{p.art}</pre>
+				<div class="powerup__meta">
+					<span class="powerup__label">{p.label}</span>
+					<span class="powerup__ratio">{p.done} / {p.total}</span>
+				</div>
+			</article>
+		))}
+	</div>
+</section>

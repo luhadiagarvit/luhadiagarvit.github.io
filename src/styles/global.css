@@ -818,12 +818,61 @@
 	.alltrails__alt { min-width: 0; }
 }
 
-/* portrait 5-level — filled in v3 step 7 */
-.portrait-l1 { /* placeholder */ }
-.portrait-l2 { /* placeholder */ }
-.portrait-l3 { /* placeholder */ }
-.portrait-l4 { /* placeholder */ }
-.portrait-l5 { /* placeholder */ }
+/* retired in v3.1 — Portrait replaced by PowerUps */
+/* .portrait-l1 — retired */
+/* .portrait-l2 — retired */
+/* .portrait-l3 — retired */
+/* .portrait-l4 — retired */
+/* .portrait-l5 — retired */
+
+/* v3.1 — power-ups module. 4 ASCII habit indicators, decay-driven by 30-day completion. */
+.powerups__grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 16px;
+	align-items: start;
+}
+@media (max-width: 640px) {
+	.powerups__grid { grid-template-columns: repeat(2, 1fr); }
+}
+.powerup {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding: 10px 8px;
+	border: 1px dashed var(--color-rule);
+	border-radius: 4px;
+	background: var(--color-card);
+}
+.powerup__art {
+	font-family: inherit;
+	font-size: clamp(8px, 1.4vw, 11px);
+	line-height: 1.05;
+	color: var(--color-muted);
+	margin: 0;
+	white-space: pre;
+	overflow: hidden;
+}
+/* higher levels render in the accent color */
+.powerup--l5 .powerup__art { color: var(--color-accent); }
+.powerup--l4 .powerup__art { color: var(--color-accent-2); }
+.powerup--l3 .powerup__art { color: var(--color-global-text); }
+/* l2 and l1 stay --color-muted (default) */
+.powerup__meta {
+	display: flex;
+	gap: 8px;
+	align-items: baseline;
+	font-size: 11.5px;
+}
+.powerup__label {
+	color: var(--color-global-text);
+	font-weight: 500;
+}
+.powerup__ratio {
+	color: var(--color-muted);
+	letter-spacing: 0.04em;
+}
 
 /* note neighborhood — v3 step 4. desktop two-column with sticky right rail
  * at >=1024px; collapses to a footer block below. */
