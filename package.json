@@ -13,7 +13,8 @@
 		"format": "prettier -w . --cache",
 		"embeddings": "node scripts/build-embeddings.mjs",
 		"portrait:render": "node scripts/render-portrait.mjs",
-		"trails:import": "node scripts/parse-gpx.mjs"
+		"trails:import": "node scripts/parse-gpx.mjs",
+		"sync:obsidian": "node scripts/sync-obsidian.mjs"
 	},
 	"dependencies": {
 		"@astrojs/markdown-remark": "^7.0.0",
