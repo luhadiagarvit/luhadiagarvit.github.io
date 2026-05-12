@@ -78,6 +78,22 @@ const buildKvSync = {
 					e instanceof Error ? e.message : String(e),
 				);
 			}
+			try {
+				await syncHabits({ token, account, ns });
+			} catch (e) {
+				console.warn(
+					"[kv] habits sync failed:",
+					e instanceof Error ? e.message : String(e),
+				);
+			}
+			try {
+				await syncEvents({ token, account, ns });
+			} catch (e) {
+				console.warn(
+					"[kv] events sync failed:",
+					e instanceof Error ? e.message : String(e),
+				);
+			}
 		},
 	},
 };
@@ -150,6 +166,112 @@ async function syncStreak(c: KvCreds): Promise<void> {
 		path,
 		`${JSON.stringify({ streak: payload.value }, null, 2)}\n`,
 	);
+}
+
+// v3.1 step 2 — habits and events sync. Habits aggregate the last 30 days
+// (today inclusive) into a per-day row of {meditate, reflect, move, read};
+// missing data is null. Events filter to the same window and sort newest
+// first. KV keys outside the window are silently ignored.
+const HABIT_NAMES = ["meditate", "reflect", "move", "read"] as const;
+type HabitName = (typeof HABIT_NAMES)[number];
+
+function lastNDates(n: number, today: Date): string[] {
+	const out: string[] = [];
+	const base = new Date(
+		Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
+	);
+	for (let i = n - 1; i >= 0; i--) {
+		const d = new Date(base);
+		d.setUTCDate(d.getUTCDate() - i);
+		out.push(d.toISOString().slice(0, 10));
+	}
+	return out;
+}
+
+async function syncHabits(c: KvCreds): Promise<void> {
+	const keys = await kvList(c, "habit:");
+	const today = new Date();
+	const window = lastNDates(30, today);
+	const windowSet = new Set(window);
+	const perDay = new Map<string, Record<HabitName, number | null>>();
+	for (const date of window) {
+		perDay.set(date, { meditate: null, reflect: null, move: null, read: null });
+	}
+	for (const k of keys) {
+		// key shape: habit:<name>:<YYYY-MM-DD>
+		const parts = k.split(":");
+		if (parts.length !== 3) continue;
+		const habit = parts[1] as HabitName;
+		const date = parts[2];
+		if (!HABIT_NAMES.includes(habit)) continue;
+		if (!date || !windowSet.has(date)) continue;
+		const raw = await kvGet(c, k);
+		if (!raw) continue;
+		let payload: { value?: unknown };
+		try {
+			payload = JSON.parse(raw);
+		} catch {
+			continue;
+		}
+		const value = typeof payload.value === "number" ? payload.value : null;
+		const row = perDay.get(date);
+		if (row) row[habit] = value;
+	}
+	const days = window.map((date) => ({
+		date,
+		...(perDay.get(date) ?? {
+			meditate: null,
+			reflect: null,
+			move: null,
+			read: null,
+		}),
+	}));
+	const out = { generated: new Date().toISOString(), days };
+	const path = new URL(
+		"./src/content/now/habits-30d.json",
+		import.meta.url,
+	);
+	await fs.promises.writeFile(path, `${JSON.stringify(out, null, 2)}\n`);
+}
+
+async function syncEvents(c: KvCreds): Promise<void> {
+	const keys = await kvList(c, "event:");
+	const today = new Date();
+	const window = lastNDates(30, today);
+	const windowSet = new Set(window);
+	const events: { kind: string; iso: string; payload?: unknown }[] = [];
+	for (const k of keys) {
+		// key shape: event:<kind>:<iso>
+		const idx = k.indexOf(":");
+		const idx2 = k.indexOf(":", idx + 1);
+		if (idx < 0 || idx2 < 0) continue;
+		const kind = k.slice(idx + 1, idx2);
+		const iso = k.slice(idx2 + 1);
+		if (!kind || !iso) continue;
+		const date = iso.slice(0, 10);
+		if (!windowSet.has(date)) continue;
+		const raw = await kvGet(c, k);
+		if (!raw) continue;
+		let payload: { payload?: unknown };
+		try {
+			payload = JSON.parse(raw);
+		} catch {
+			continue;
+		}
+		const entry: { kind: string; iso: string; payload?: unknown } = {
+			kind,
+			iso,
+		};
+		if (payload.payload !== undefined) entry.payload = payload.payload;
+		events.push(entry);
+	}
+	events.sort((a, b) => (a.iso < b.iso ? 1 : a.iso > b.iso ? -1 : 0));
+	const out = { generated: new Date().toISOString(), events };
+	const path = new URL(
+		"./src/content/now/events-30d.json",
+		import.meta.url,
+	);
+	await fs.promises.writeFile(path, `${JSON.stringify(out, null, 2)}\n`);
 }
 
 function frontmatter(p: Record<string, unknown>): string {
